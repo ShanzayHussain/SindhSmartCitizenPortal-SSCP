@@ -69,7 +69,7 @@ Create `oracle-backend/.env`:
 ```env
 DB_USER=system
 DB_PASSWORD=1234
-DB_CONNECT=localhost:1521/XE
+DB_CONNECT=localhost:1521/xepdb1
 AUTH_SECRET=smart-citizen-portal-secret
 PORT=5000
 ```
@@ -170,7 +170,7 @@ Shows complaint submission and complaint history for citizens.
 
 Shows profile details, complaint stats, and login activity.
 
-![Citizen Profile](images/s6.png)
+![Citizen Profile](cprofile.png)
 
 ### Departments Page
 

@@ -1,0 +1,144 @@
+@startchen SindhSmartCitizenPortalERD
+left to right direction
+skinparam linetype ortho
+skinparam ranksep 90
+skinparam nodesep 70
+
+title Sindh Smart Citizen Portal - Conceptual ER Diagram
+
+entity "USER" as USER {
+  user_id : NUMBER <<key>>
+  full_name {
+    first_name : VARCHAR2(50)
+    last_name : VARCHAR2(50)
+  }
+  email : VARCHAR2(255)
+  password_hash : VARCHAR2(255)
+  cnic : VARCHAR2(15)
+  contact_no : VARCHAR2(20)
+  alternate_contact : VARCHAR2(20) <<multi>>
+  residence_address {
+    street_address : VARCHAR2(255)
+    district : VARCHAR2(100)
+  }
+  father_name : VARCHAR2(100)
+  dob : DATE
+  age : INTEGER <<derived>>
+  role : VARCHAR2(30)
+  profile_picture : CLOB
+  created_at : TIMESTAMP
+}
+
+entity "LOGIN_LOG" as LOGIN_LOG {
+  log_id : NUMBER <<key>>
+  login_at : TIMESTAMP
+  device : VARCHAR2(100)
+  ip_address : VARCHAR2(50)
+  status : VARCHAR2(10)
+}
+
+entity "DEPARTMENT" as DEPARTMENT {
+  dept_id : NUMBER <<key>>
+  dept_name : VARCHAR2(100)
+  created_at : TIMESTAMP
+}
+
+entity "OFFICER" as OFFICER {
+  officer_id : NUMBER <<key>>
+  officer_name {
+    first_name : VARCHAR2(50)
+    last_name : VARCHAR2(50)
+  }
+  email : VARCHAR2(255)
+  phone : VARCHAR2(20)
+  created_at : TIMESTAMP
+}
+
+entity "COMPLAINT" as COMPLAINT {
+  complaint_id : NUMBER <<key>>
+  complaint_code : VARCHAR2(10) <<derived>>
+  title : VARCHAR2(200)
+  description : CLOB
+  admin_remarks : CLOB
+  status : VARCHAR2(20)
+  date_filed : DATE
+  date_resolved : DATE
+  resolution_days : NUMBER <<derived>>
+}
+
+entity "COMPLAINT_DOCUMENT" as COMPLAINT_DOCUMENT {
+  doc_id : NUMBER <<key>>
+  file_name : VARCHAR2(255)
+  file_data : CLOB
+  uploaded_at : TIMESTAMP
+}
+
+relationship "FILES" as FILES {
+}
+
+relationship "GENERATES" as GENERATES {
+}
+
+relationship "BELONGS_TO" as BELONGS_TO {
+}
+
+relationship "WORKS_IN" as WORKS_IN {
+}
+
+relationship "ASSIGNED_TO" as ASSIGNED_TO {
+}
+
+relationship "HAS_DOCUMENT" as HAS_DOCUMENT {
+}
+
+FILES -N- USER
+FILES =1= COMPLAINT
+
+GENERATES -N- USER
+GENERATES =1= LOGIN_LOG
+
+BELONGS_TO -N- DEPARTMENT
+BELONGS_TO =1= COMPLAINT
+
+WORKS_IN -N- DEPARTMENT
+WORKS_IN -(0,1)- OFFICER
+
+ASSIGNED_TO -N- OFFICER
+ASSIGNED_TO -(0,1)- COMPLAINT
+
+HAS_DOCUMENT -N- COMPLAINT
+HAS_DOCUMENT =1= COMPLAINT_DOCUMENT
+
+note bottom of USER
+  Composite attributes:
+  full_name, residence_address
+
+  Multivalued attribute:
+  alternate_contact
+
+  Derived attribute:
+  age = current_date - dob
+end note
+
+note bottom of COMPLAINT
+  Derived attributes:
+  complaint_code = formatted complaint_id
+  resolution_days = date_resolved - date_filed
+
+  Participation:
+  each complaint must be filed by one user
+  each complaint must belong to one department
+  complaint to officer is optional
+end note
+
+legend right
+  ==Notation==
+  <<key>> Key attribute
+  <<derived>> Derived attribute
+  <<multi>> Multivalued attribute
+  Nested attributes = Composite attribute
+  = = Mandatory / total participation
+  - - Optional / partial participation
+endlegend
+
+@endchen
