@@ -1,118 +1,103 @@
-import React, { useState, useEffect } from "react";
-import DashboardLayout from "./DashboardLayout";
-import bgImg from "../assets/bg.png";
+import React, { useEffect, useState } from 'react';
+import DashboardLayout from './DashboardLayout';
 
 function getAuthHeaders(extra = {}) {
   const token = localStorage.getItem('token');
   return token ? { Authorization: `Bearer ${token}`, ...extra } : { ...extra };
 }
 
+const inputClass = 'w-full rounded-lg border border-[#ccd4e2] bg-white px-3 py-2 text-[0.88rem] text-[#1f2937] focus:outline-none focus:ring-1 focus:ring-[#1b3a57] disabled:bg-[#f8fafc] disabled:text-[#64748b]';
+
 export default function Profile() {
   const user = JSON.parse(localStorage.getItem('user') || '{}');
 
-  const [edit, setEdit]       = useState(false);
-  const [saving, setSaving]   = useState(false);
+  const [edit, setEdit] = useState(false);
+  const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState('');
-  const [logs, setLogs]       = useState([]);
-  const [avatar, setAvatar]   = useState(user.profilepic || null);
-  const [complaintStats, setComplaintStats] = useState({
-    filed: 0,
-    resolved: 0,
-    active: 0,
-  });
+  const [logs, setLogs] = useState([]);
+  const [avatar, setAvatar] = useState(user.profilepic || null);
+  const [complaintStats, setComplaintStats] = useState({ filed: 0, resolved: 0, active: 0 });
 
   const [form, setForm] = useState({
-    name:     user.full_name   || '',
-    father:   user.father_name || '',
-    phone:    user.phone       || '',
-    email:    user.email       || '',
-    address:  user.address     || '',
-    district: user.district    || '',
-    cnic:     user.cnic        || '',
-    dob:      user.dob         || '',
+    name: user.full_name || '',
+    father: user.father_name || '',
+    phone: user.phone || '',
+    email: user.email || '',
+    address: user.address || '',
+    district: user.district || '',
+    cnic: user.cnic || '',
+    dob: user.dob || '',
   });
 
   const today = new Date().toISOString().split('T')[0];
 
-  // Load login logs
   useEffect(() => {
     if (!user.user_id) return;
-    fetch(`/api/users/${user.user_id}/logs`, {
-      headers: getAuthHeaders(),
-    })
-      .then(r => r.json())
-      .then(data => {
+    fetch(`/api/users/${user.user_id}/logs`, { headers: getAuthHeaders() })
+      .then((r) => r.json())
+      .then((data) => {
         if (!Array.isArray(data)) return;
-        setLogs(data.map(l => ({
-          date:     l.DATE_STR   || '—',
-          device:   l.DEVICE     || '—',
-          location: l.IP_ADDRESS || '—',
-          status:   l.STATUS     || '—',
-          green:    l.STATUS === 'Success',
+        setLogs(data.map((item) => ({
+          date: item.DATE_STR || '-',
+          device: item.DEVICE || '-',
+          location: item.IP_ADDRESS || '-',
+          status: item.STATUS || '-',
+          green: item.STATUS === 'Success',
         })));
       })
       .catch(() => {});
   }, []);
 
-  // Load complaint stats
   useEffect(() => {
     if (!user.user_id) return;
-    fetch(`/api/dashboard/${user.user_id}`, {
-      headers: getAuthHeaders(),
-    })
-      .then(r => r.json())
-      .then(data => {
+    fetch(`/api/dashboard/${user.user_id}`, { headers: getAuthHeaders() })
+      .then((r) => r.json())
+      .then((data) => {
         const stats = data?.stats || {};
         const total = Number(stats.total || 0);
         const resolved = Number(stats.resolved || 0);
         const pending = Number(stats.pending || 0);
         const inProgress = Number(stats.inProgress || 0);
-
-        setComplaintStats({
-          filed: total,
-          resolved,
-          active: pending + inProgress,
-        });
+        setComplaintStats({ filed: total, resolved, active: pending + inProgress });
       })
       .catch(() => {});
   }, []);
 
-  // Save profile
   async function saveProfile() {
     setSaving(true);
     setMessage('');
-    const u = JSON.parse(localStorage.getItem('user') || '{}');
+    const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
 
     try {
-      const res = await fetch(`/api/users/${u.user_id}`, {
+      const res = await fetch(`/api/users/${currentUser.user_id}`, {
         method: 'PUT',
         headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
         body: JSON.stringify({
-          full_name:   form.name,
+          full_name: form.name,
           father_name: form.father,
-          phone:       form.phone,
-          email:       form.email,
-          address:     form.address,
-          district:    form.district,
-          cnic:        form.cnic,
-          dob:         form.dob || null,
-          profilepic:  avatar   || null,
+          phone: form.phone,
+          email: form.email,
+          address: form.address,
+          district: form.district,
+          cnic: form.cnic,
+          dob: form.dob || null,
+          profilepic: avatar || null,
         }),
       });
 
       if (!res.ok) throw new Error('Update failed');
 
       localStorage.setItem('user', JSON.stringify({
-        ...u,
-        full_name:   form.name,
+        ...currentUser,
+        full_name: form.name,
         father_name: form.father,
-        phone:       form.phone,
-        email:       form.email,
-        address:     form.address,
-        district:    form.district,
-        cnic:        form.cnic,
-        dob:         form.dob,
-        profilepic:  avatar || null,
+        phone: form.phone,
+        email: form.email,
+        address: form.address,
+        district: form.district,
+        cnic: form.cnic,
+        dob: form.dob,
+        profilepic: avatar || null,
       }));
 
       setMessage('Profile saved successfully!');
@@ -124,207 +109,162 @@ export default function Profile() {
     }
   }
 
-  // Cancel edit
   function cancelEdit() {
-    const u = JSON.parse(localStorage.getItem('user') || '{}');
+    const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
     setForm({
-      name:     u.full_name   || '',
-      father:   u.father_name || '',
-      phone:    u.phone       || '',
-      email:    u.email       || '',
-      address:  u.address     || '',
-      district: u.district    || '',
-      cnic:     u.cnic        || '',
-      dob:      u.dob         || '',
+      name: currentUser.full_name || '',
+      father: currentUser.father_name || '',
+      phone: currentUser.phone || '',
+      email: currentUser.email || '',
+      address: currentUser.address || '',
+      district: currentUser.district || '',
+      cnic: currentUser.cnic || '',
+      dob: currentUser.dob || '',
     });
-    setAvatar(u.profilepic || null);
+    setAvatar(currentUser.profilepic || null);
     setMessage('');
     setEdit(false);
   }
 
-  // Pick image
   function pickImage(e) {
     const file = e.target.files[0];
     if (!file) return;
     const reader = new FileReader();
-    reader.onload = (ev) => setAvatar(ev.target.result);
+    reader.onload = (event) => setAvatar(event.target.result);
     reader.readAsDataURL(file);
   }
 
   const fields = [
-    { key: 'name',     label: 'Full Name'     },
-    { key: 'father',   label: 'Father Name'   },
-    { key: 'phone',    label: 'Phone'         },
-    { key: 'email',    label: 'Email'         },
-    { key: 'address',  label: 'Address'       },
-    { key: 'district', label: 'District'      },
-    { key: 'cnic',     label: 'CNIC'          },
-    { key: 'dob',      label: 'Date of Birth', type: 'date' },
+    { key: 'name', label: 'Full Name' },
+    { key: 'father', label: 'Father Name' },
+    { key: 'phone', label: 'Phone' },
+    { key: 'email', label: 'Email' },
+    { key: 'district', label: 'District' },
+    { key: 'cnic', label: 'CNIC' },
+    { key: 'dob', label: 'Date of Birth', type: 'date' },
+    { key: 'address', label: 'Address' },
   ];
 
   return (
     <DashboardLayout>
-      <div className="bg-[#f9f7f1] min-h-screen p-5 font-sans text-gray-800 relative">
+      <div style={{ fontFamily: "'Segoe UI', sans-serif", color: '#1f2937' }}>
+        <div style={{ marginBottom: '22px' }}>
+          <h1 style={{ color: '#1b3a57', margin: 0, fontSize: '1.6rem', fontWeight: 800 }}>Profile</h1>
+          <p style={{ margin: '6px 0 0', color: '#6b7280', fontSize: '0.95rem' }}>Manage your account details and view recent security activity.</p>
+        </div>
 
-        {/* Background image */}
-        <div
-          className="absolute bottom-0 left-0 w-[1200px] h-[280px] rounded-2xl overflow-hidden"
-          style={{ backgroundImage: `url(${bgImg})`, backgroundSize: 'cover' }}
-        />
-
-        <div className="relative z-10 flex flex-col gap-6">
-
-          {/* ── Top card ── */}
-          <div className="bg-white rounded-3xl shadow-lg p-8 flex flex-col md:flex-row items-center justify-between gap-6">
-
-            <div className="flex items-center gap-6">
-              {/* Photo */}
-              <div className="relative">
+        <div className="grid gap-5 xl:grid-cols-[360px_minmax(0,1fr)]">
+          <div className="flex flex-col gap-5">
+            <section className="rounded-[14px] border border-[#e5e7eb] bg-white p-5 shadow-[0_2px_10px_rgba(0,0,0,0.07)]">
+              <div className="flex flex-col items-center text-center">
                 {avatar ? (
-                  <img
-                    src={avatar}
-                    alt="profile"
-                    className="w-36 h-36 rounded-full object-cover border-2 border-gray-200 shadow"
-                    onError={() => setAvatar(null)}
-                  />
+                  <img src={avatar} alt="profile" className="h-32 w-32 rounded-full border-4 border-[#eef3fb] object-cover shadow" onError={() => setAvatar(null)} />
                 ) : (
-                  <div className="w-36 h-36 rounded-full border-2 border-dashed border-gray-300 bg-gray-100 flex flex-col items-center justify-center">
-                    <svg className="w-10 h-10 text-gray-400" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
-                      <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
-                      <circle cx="12" cy="7" r="4"/>
-                    </svg>
-                    <span className="text-xs text-gray-400 mt-1">No Photo</span>
+                  <div className="flex h-32 w-32 items-center justify-center rounded-full border-4 border-[#eef3fb] bg-[#f8fafc] text-3xl font-bold text-[#1b3a57]">
+                    {(form.name || 'U').slice(0, 1).toUpperCase()}
                   </div>
                 )}
                 {edit && (
-                  <label className="absolute bottom-1 right-1 bg-[#1b3a57] text-white text-xs px-2 py-1 rounded-full cursor-pointer hover:bg-[#254a78]">
-                    Upload
+                  <label className="mt-3 cursor-pointer rounded-lg border border-[#c8d4e6] bg-[#f6f8fb] px-3 py-2 text-sm font-semibold text-[#254265] hover:bg-[#eef3fb]">
+                    Upload Photo
                     <input type="file" accept="image/*" className="hidden" onChange={pickImage} />
                   </label>
                 )}
+                <h2 className="mb-1 mt-4 text-xl font-bold text-[#1b3a57]">{form.name || 'User'}</h2>
+                <p className="m-0 text-sm font-semibold uppercase text-[#64748b]">{user.role || 'USER'}</p>
+                <p className="mt-2 text-sm text-[#64748b]">CNIC: {form.cnic || '-'}</p>
               </div>
+              {!edit ? (
+                <button onClick={() => { setMessage(''); setEdit(true); }} className="mt-5 w-full rounded-lg bg-[#1b3a57] px-4 py-2.5 text-sm font-bold text-white hover:bg-[#254a78]">
+                  Edit Profile
+                </button>
+              ) : null}
+            </section>
 
-              {/* Name + role */}
-              <div>
-                <h1 className="text-3xl font-bold text-[#1b3a57]">{form.name || 'User'}</h1>
-                <p className="text-sm text-gray-500 uppercase tracking-widest mt-1">{user.role || 'USER'}</p>
-                <p className="text-gray-600 mt-1">CNIC: {form.cnic || '—'}</p>
+            <section className="rounded-[14px] border border-[#e5e7eb] bg-white p-5 shadow-[0_2px_10px_rgba(0,0,0,0.07)]">
+              <h3 className="mb-4 mt-0 text-base font-bold text-[#1b3a57]">Complaint Stats</h3>
+              <div className="grid grid-cols-3 gap-3 text-center">
+                {[
+                  { label: 'Filed', count: complaintStats.filed, color: '#1b3a57' },
+                  { label: 'Resolved', count: complaintStats.resolved, color: '#14863e' },
+                  { label: 'Active', count: complaintStats.active, color: '#f59e0b' },
+                ].map((item) => (
+                  <div key={item.label} className="rounded-lg border border-[#e2e8f0] bg-[#f8fafc] p-3">
+                    <p className="m-0 text-2xl font-extrabold" style={{ color: item.color }}>{item.count}</p>
+                    <p className="m-0 text-xs font-semibold text-[#64748b]">{item.label}</p>
+                  </div>
+                ))}
               </div>
-            </div>
-
-            {!edit && (
-              <button
-                onClick={() => { setMessage(''); setEdit(true); }}
-                className="bg-[#1b3a57] text-white px-6 py-2 rounded-lg hover:bg-[#254a78] font-semibold"
-              >
-                Edit Profile
-              </button>
-            )}
+            </section>
           </div>
 
-          {/* Message */}
-          {message && (
-            <div className={`rounded-xl px-4 py-3 text-sm font-medium border ${
-              message.includes('success')
-                ? 'bg-green-50 text-green-700 border-green-200'
-                : 'bg-red-50 text-red-700 border-red-200'
-            }`}>
-              {message}
-            </div>
-          )}
+          <div className="flex flex-col gap-5">
+            {message && (
+              <div className={`rounded-xl border px-4 py-3 text-sm font-semibold ${message.includes('success') ? 'border-green-200 bg-green-50 text-green-700' : 'border-red-200 bg-red-50 text-red-700'}`}>
+                {message}
+              </div>
+            )}
 
-          {/* ── Two column grid ── */}
-          <div className="grid lg:grid-cols-2 gap-6">
-
-            {/* Left column */}
-            <div className="flex flex-col gap-6">
-
-              {/* Stats */}
-              <div className="bg-white rounded-2xl shadow-lg p-6">
-                <h3 className="text-xl font-semibold text-[#1b3a57] border-b pb-2 mb-4">Complaint Stats</h3>
-                <div className="grid grid-cols-3 gap-4 text-center">
-                  {[
-                    { label: 'Filed',    count: complaintStats.filed, color: 'text-[#1b3a57]'  },
-                    { label: 'Resolved', count: complaintStats.resolved, color: 'text-green-600'  },
-                    { label: 'Active',   count: complaintStats.active, color: 'text-orange-500' },
-                  ].map(s => (
-                    <div key={s.label} className="bg-[#f6f5f1] rounded-xl p-4">
-                      <p className={`text-2xl font-bold ${s.color}`}>{s.count}</p>
-                      <p className="text-sm text-gray-500">{s.label}</p>
-                    </div>
-                  ))}
-                </div>
+            <section className="rounded-[14px] border border-[#e5e7eb] bg-white p-5 shadow-[0_2px_10px_rgba(0,0,0,0.07)]">
+              <div className="mb-4 flex items-center justify-between gap-3 border-b border-[#e5e7eb] pb-3">
+                <h3 className="m-0 text-base font-bold text-[#1b3a57]">Profile Details</h3>
+                {edit ? (
+                  <div className="flex gap-2">
+                    <button onClick={saveProfile} disabled={saving} className="rounded-lg bg-[#14863e] px-4 py-2 text-sm font-bold text-white disabled:opacity-60">
+                      {saving ? 'Saving...' : 'Save'}
+                    </button>
+                    <button onClick={cancelEdit} className="rounded-lg border border-[#cbd5e1] bg-[#f8fafc] px-4 py-2 text-sm font-bold text-[#334155]">
+                      Cancel
+                    </button>
+                  </div>
+                ) : null}
               </div>
 
-              {/* Login logs */}
-              <div className="bg-white rounded-2xl shadow-lg p-6">
-                <h3 className="text-xl font-semibold text-[#1b3a57] border-b pb-2 mb-3">Security Logs</h3>
-                {logs.length === 0 ? (
-                  <p className="text-sm text-gray-400 text-center py-4">No login history yet.</p>
-                ) : (
-                  <table className="w-full text-sm">
+              <div className="grid gap-4 md:grid-cols-2">
+                {fields.map(({ key, label, type }) => (
+                  <label key={key} className={key === 'address' ? 'grid gap-1.5 text-sm font-bold text-[#314a6f] md:col-span-2' : 'grid gap-1.5 text-sm font-bold text-[#314a6f]'}>
+                    {label}
+                    <input
+                      type={type || 'text'}
+                      value={form[key]}
+                      disabled={!edit || key === 'cnic' || key === 'email'}
+                      max={type === 'date' ? today : undefined}
+                      onChange={(e) => setForm({ ...form, [key]: e.target.value })}
+                      className={inputClass}
+                    />
+                  </label>
+                ))}
+              </div>
+            </section>
+
+            {/* <section className="rounded-[14px] border border-[#e5e7eb] bg-white p-5 shadow-[0_2px_10px_rgba(0,0,0,0.07)]">
+              <h3 className="mb-4 mt-0 text-base font-bold text-[#1b3a57]">Security Logs</h3>
+              {logs.length === 0 ? (
+                <p className="py-5 text-center text-sm text-[#64748b]">No login history yet.</p> */}
+              {/* ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full border-collapse text-sm">
                     <thead>
-                      <tr className="bg-[#f6f5f1] text-gray-600 border-b">
-                        <th className="py-2 text-left">Date</th>
-                        <th className="text-left">Device</th>
-                        <th className="text-left">Location</th>
-                        <th className="text-left">Status</th>
+                      <tr className="bg-[#f8fafc] text-[#334155]">
+                        {['Date', 'Device', 'Location', 'Status'].map((heading) => (
+                          <th key={heading} className="border-b border-[#e2e8f0] px-3 py-2 text-left font-bold">{heading}</th>
+                        ))}
                       </tr>
                     </thead>
                     <tbody>
-                      {logs.map((log, i) => (
-                        <tr key={i} className="border-b hover:bg-[#f3f2ed]">
-                          <td className="py-2 pr-3">{log.date}</td>
-                          <td className="pr-3">{log.device}</td>
-                          <td className="pr-3">{log.location}</td>
-                          <td className={log.green ? 'text-green-600' : 'text-red-500'}>{log.status}</td>
+                      {logs.map((log, index) => (
+                        <tr key={index} className="hover:bg-[#f8fafc]">
+                          <td className="border-b border-[#f1f5f9] px-3 py-2">{log.date}</td>
+                          <td className="border-b border-[#f1f5f9] px-3 py-2">{log.device}</td>
+                          <td className="border-b border-[#f1f5f9] px-3 py-2">{log.location}</td>
+                          <td className={`border-b border-[#f1f5f9] px-3 py-2 font-bold ${log.green ? 'text-green-600' : 'text-red-500'}`}>{log.status}</td>
                         </tr>
                       ))}
                     </tbody>
                   </table>
-                )}
-              </div>
-            </div>
-
-            {/* Right column — form */}
-            <div className="bg-white rounded-2xl shadow-lg p-6">
-              <h3 className="text-xl font-semibold text-[#1b3a57] mb-4">Profile Details</h3>
-
-              {fields.map(({ key, label, type }) => (
-                <div key={key} className="mb-3">
-                  <label className="text-sm text-gray-500">{label}</label>
-                  <input
-                    type={type || 'text'}
-                    value={form[key]}
-                    disabled={!edit}
-                    max={type === 'date' ? today : undefined}
-                    onChange={e => setForm({ ...form, [key]: e.target.value })}
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 mt-1 text-sm
-                               focus:outline-none focus:ring-2 focus:ring-[#1b3a57]
-                               disabled:bg-gray-50 disabled:text-gray-400"
-                  />
-                </div>
-              ))}
-
-              {edit && (
-                <div className="flex gap-3 mt-5">
-                  <button
-                    onClick={saveProfile}
-                    disabled={saving}
-                    className="bg-green-600 text-white px-5 py-2 rounded-lg hover:bg-green-700 disabled:opacity-50 text-sm"
-                  >
-                    {saving ? 'Saving...' : 'Save'}
-                  </button>
-                  <button
-                    onClick={cancelEdit}
-                    className="bg-gray-200 px-5 py-2 rounded-lg hover:bg-gray-300 text-sm"
-                  >
-                    Cancel
-                  </button>
                 </div>
               )}
-            </div>
-
+            </section> */}
           </div>
         </div>
       </div>

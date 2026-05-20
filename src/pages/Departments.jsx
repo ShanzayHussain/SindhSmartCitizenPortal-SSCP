@@ -1,111 +1,7 @@
-// import React from 'react';
-// import { mockData } from '../mockData';
-// import Card from '../components/ui/Card';
-// import bgImg from "../assets/bg.png";
-// import { Zap, Droplets, Flame } from "lucide-react";
-// import DashboardLayout from "../Pages/DashboardLayout";
-
-// const departments = [
-//   {
-//     name: "K-Electric (KE)",
-//     icon: Zap,
-//     complaints: mockData.stats.totalComplaints,
-//     description: "Electricity supply & distribution",
-//   },
-//   {
-//     name: "SSGC",
-//     icon: Flame,
-//     complaints: mockData.stats.totalComplaints,
-//     description: "Gas supply & distribution",
-//   },
-//   {
-//     name: "Water Board",
-//     icon: Droplets,
-//     complaints: mockData.stats.totalComplaints,
-//     description: "Water supply & sewerage services",
-//   },
-  
-// ];
-
-// const Departments = () => {
-//   return (
-//     <DashboardLayout>
-//     <div className="min-h-screen bg-surface-50  "
-// >
-
-//       {/* Header */}
-//       <header className="bg-gradient-to-br from-auth-start to-auth-end p-10 text-white shadow-lg">
-//         <div className="container mx-auto px-4 text-center">
-//           <h1 className="text-3xl font-bold tracking-tight text-white md:text-4xl">
-//             Departments
-//           </h1>
-//         </div>
-//       </header>
-
-//       {/* Department Cards */}
-//       <main className="container mx-auto px-4 py-12" style={{ backgroundImage: `url(${bgImg})` }}>
-
-//         <p className="mb-8 mx-auto max-w-4xl text-lg text-surface-600 italic">
-//   "These departments are responsible for managing key city utilities such as electricity, 
-//   gas, and water supply. Citizens can submit service-related complaints through the 
-//   Smart City Complaint Portal".
-// </p>
-
-//         <div className="mx-auto grid max-w-4xl gap-6 sm:grid-cols-3">
-
-//           {departments.map((dept) => (
-//             <a
-//               key={dept.name}
-//               href={dept.url}
-//               target="_blank"
-//               rel="noopener noreferrer"
-//               className="group rounded-[var(--radius-card)] border border-surface-200 bg-white p-6 text-center shadow-[var(--shadow-card)] transition-all hover:-translate-y-1 hover:shadow-xl hover: from-auth-start"
-//             >
-
-//               <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-brand-100  from-auth-start transition-colors group-hover: from-auth-start group-hover:text-white">
-//                 <dept.icon className="h-8 w-8" />
-//               </div>
-
-//               <h3 className="text-lg font-semibold text-surface-800">
-//                 {dept.name}
-//               </h3>
-
-//               <p className="mt-1 text-sm text-surface-500">
-//                 {dept.description}
-//               </p>
-
-//               <div className="mt-4 rounded-md bg-brand-50 px-3 py-2">
-//                 <span className="text-2xl font-bold from-auth-start">
-//                   {dept.complaints.toLocaleString()}
-//                 </span>
-//                 <p className="text-xs text-surface-500">
-//                   Total Complaints
-//                 </p>
-//               </div>
-
-//             </a>
-//           ))}
-
-//         </div>
-
-//       </main>
-
-//     </div>
-//     </DashboardLayout>
-//   );
-// };
-
-// export default Departments;
-
-
-
-
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import Card from '../components/ui/Card';
-import bgImg from "../assets/bg.png";
-import { Zap, Droplets, Flame, Building2 } from "lucide-react";
-import DashboardLayout from "./DashboardLayout";
+import { Building2, Droplets, Flame, Zap } from 'lucide-react';
+import DashboardLayout from './DashboardLayout';
 
 const API = 'http://localhost:5000/api';
 
@@ -114,120 +10,114 @@ function getAuthHeaders() {
   return token ? { Authorization: `Bearer ${token}` } : {};
 }
 
-// Map dept names to icons
-const iconMap = {
-  'KE':         Zap,
-  'SSGC':       Flame,
-  'Water Board': Droplets,
-};
-const fallbackIcon = Building2;
+function getDepartmentMeta(name = '') {
+  const normalized = name.toLowerCase().replace(/[\s-]/g, '');
+  if (normalized.includes('ssgc')) {
+    return { Icon: Flame, color: '#14863e', tint: '#e8f7ee', description: 'Gas supply and distribution services' };
+  }
+  if (normalized.includes('ke') || normalized.includes('kelectric')) {
+    return { Icon: Zap, color: '#f97316', tint: '#fff3e8', description: 'Electricity supply and distribution services' };
+  }
+  if (normalized.includes('waterboard') || normalized.includes('water')) {
+    return { Icon: Droplets, color: '#2563eb', tint: '#eaf2ff', description: 'Water supply and sewerage services' };
+  }
+  return { Icon: Building2, color: '#1b3a57', tint: '#eef3fb', description: 'City utility service department' };
+}
 
-const Departments = () => {
+export default function Departments() {
   const navigate = useNavigate();
-  const user     = JSON.parse(localStorage.getItem('user') || '{}');
-  const userId   = user?.user_id;
+  const user = JSON.parse(localStorage.getItem('user') || '{}');
+  const userId = user?.user_id;
 
   const [departments, setDepartments] = useState([]);
-  const [counts,      setCounts]      = useState({});   // { dept_id: count }
-  const [loading,     setLoading]     = useState(true);
+  const [counts, setCounts] = useState({});
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Fetch departments + user's complaints in parallel
     Promise.all([
-      fetch(`${API}/departments`).then(r => r.json()),
+      fetch(`${API}/departments`).then((r) => r.json()),
       userId
-        ? fetch(`${API}/complaints/user/${userId}`, {
-            headers: getAuthHeaders(),
-          }).then(r => r.json())
+        ? fetch(`${API}/complaints/user/${userId}`, { headers: getAuthHeaders() }).then((r) => r.json())
         : Promise.resolve([]),
     ])
       .then(([depts, complaints]) => {
-        setDepartments(depts);
-
-        // Count complaints per dept_id from user's complaint list
+        const safeDepartments = Array.isArray(depts) ? depts : [];
+        const safeComplaints = Array.isArray(complaints) ? complaints : [];
         const countMap = {};
-        complaints.forEach(c => {
-          // match by department name since that's what the list API returns
-          const dept = depts.find(d => d.DEPT_NAME === c.DEPARTMENT);
-          if (dept) {
-            countMap[dept.DEPT_ID] = (countMap[dept.DEPT_ID] || 0) + 1;
-          }
+
+        safeComplaints.forEach((complaint) => {
+          const dept = safeDepartments.find((item) => item.DEPT_NAME === complaint.DEPARTMENT);
+          if (dept) countMap[dept.DEPT_ID] = (countMap[dept.DEPT_ID] || 0) + 1;
         });
+
+        setDepartments(safeDepartments);
         setCounts(countMap);
-        setLoading(false);
       })
-      .catch(err => {
-        console.error(err);
-        setLoading(false);
-      });
+      .catch(console.error)
+      .finally(() => setLoading(false));
   }, [userId]);
 
   return (
     <DashboardLayout>
-      <div className="min-h-screen bg-surface-50">
-
-        {/* Header */}
-        <header className="bg-gradient-to-br from-auth-start to-auth-end p-10 text-white shadow-lg">
-          <div className="container mx-auto px-4 text-center">
-            <h1 className="text-3xl font-bold tracking-tight text-white md:text-4xl">
-              Departments
-            </h1>
-          </div>
-        </header>
-
-        {/* Cards */}
-        <main
-          className="container mx-auto px-4 py-12"
-          style={{ backgroundImage: `url(${bgImg})` }}
-        >
-          <p className="mb-8 mx-auto max-w-4xl text-lg text-surface-600 italic">
-            "These departments are responsible for managing key city utilities such as electricity,
-            gas, and water supply. Citizens can submit service-related complaints through the
-            Smart City Complaint Portal."
+      <div style={{ fontFamily: "'Segoe UI', sans-serif", color: '#1f2937' }}>
+        <div style={{ marginBottom: '22px' }}>
+          <h1 style={{ color: '#1b3a57', margin: 0, fontSize: '1.6rem', fontWeight: 800 }}>Departments</h1>
+          <p style={{ margin: '6px 0 0', color: '#6b7280', fontSize: '0.95rem' }}>
+            View service departments and open the complaint form for city utility issues.
           </p>
+        </div>
+
+        <div style={{ background: 'white', borderRadius: '14px', padding: '22px', boxShadow: '0 2px 10px rgba(0,0,0,0.07)', border: '1px solid #e5e7eb' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px', marginBottom: '18px' }}>
+            <div>
+              <h2 style={{ fontSize: '1.05rem', fontWeight: 700, margin: 0, color: '#1b3a57' }}>Available Departments</h2>
+              <p style={{ margin: '5px 0 0', color: '#6b7280', fontSize: '0.86rem' }}>Select a department to start or track a related complaint.</p>
+            </div>
+            <button
+              onClick={() => navigate('/complaint')}
+              style={{ background: '#1b3a57', color: 'white', border: 'none', borderRadius: '8px', padding: '10px 16px', fontWeight: 700, cursor: 'pointer' }}
+            >
+              File Complaint
+            </button>
+          </div>
 
           {loading ? (
-            <p className="text-center text-surface-500">Loading departments…</p>
+            <p style={{ textAlign: 'center', color: '#6b7280', padding: '24px 0' }}>Loading departments...</p>
+          ) : departments.length === 0 ? (
+            <p style={{ textAlign: 'center', color: '#6b7280', padding: '24px 0' }}>No departments found.</p>
           ) : (
-            <div className="mx-auto grid max-w-4xl gap-6 sm:grid-cols-3">
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: '16px' }}>
               {departments.map((dept) => {
-                const Icon  = iconMap[dept.DEPT_NAME] ?? fallbackIcon;
+                const meta = getDepartmentMeta(dept.DEPT_NAME);
+                const Icon = meta.Icon;
                 const count = counts[dept.DEPT_ID] ?? 0;
 
                 return (
                   <button
                     key={dept.DEPT_ID}
                     onClick={() => navigate('/complaint')}
-                    className="group rounded-[var(--radius-card)] border border-surface-200 bg-white p-6 text-center shadow-[var(--shadow-card)] transition-all hover:-translate-y-1 hover:shadow-xl text-left w-full cursor-pointer"
+                    style={{ textAlign: 'left', background: '#ffffff', border: '1px solid #e5e7eb', borderRadius: '12px', padding: '18px', boxShadow: '0 1px 4px rgba(15,23,42,0.06)', cursor: 'pointer' }}
                   >
-                    <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-brand-100 transition-colors">
-                      <Icon className="h-8 w-8" />
-                    </div>
-
-                    <h3 className="text-lg font-semibold text-surface-800 text-center">
-                      {dept.DEPT_NAME}
-                    </h3>
-
-                    <p className="mt-1 text-sm text-surface-500 text-center">
-                      {/* {dept.DEPT_DESCRIPTION ?? 'City utility service'} */}
-                    </p>
-
-                    <div className="mt-4 rounded-md bg-brand-50 px-3 py-2 text-center">
-                      <span className="text-2xl font-bold text-brand-600">
-                        {count.toLocaleString()}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '14px' }}>
+                      <span style={{ width: '44px', height: '44px', borderRadius: '10px', background: meta.tint, color: meta.color, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <Icon size={24} />
                       </span>
-                      <p className="text-xs text-surface-500">My Complaints</p>
+                      <div>
+                        <h3 style={{ margin: 0, color: meta.color, fontSize: '1rem', fontWeight: 800 }}>{dept.DEPT_NAME}</h3>
+                        <p style={{ margin: '4px 0 0', color: '#64748b', fontSize: '0.82rem' }}>{meta.description}</p>
+                      </div>
+                    </div>
+                    <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '10px', padding: '12px' }}>
+                      <div style={{ color: '#1b3a57', fontSize: '1.45rem', fontWeight: 800, lineHeight: 1 }}>{count.toLocaleString()}</div>
+                      <div style={{ color: '#64748b', fontSize: '0.78rem', fontWeight: 700, marginTop: '4px' }}>My Complaints</div>
                     </div>
                   </button>
                 );
               })}
             </div>
           )}
-        </main>
-
+        </div>
       </div>
     </DashboardLayout>
   );
-};
-
-export default Departments;
+}

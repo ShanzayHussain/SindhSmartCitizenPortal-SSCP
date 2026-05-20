@@ -13,16 +13,24 @@ function getAuthHeaders() {
   return token ? { Authorization: `Bearer ${token}` } : {};
 }
 
-const ANNOUNCEMENTS = [
-  { icon: "📢", text: "Water Supply Maintenance on 12th May. Expect disruptions." },
-  { icon: "🛣️", text: "New Road Repair Initiative in Karachi starting next week." },
-];
+// const ANNOUNCEMENTS = [
+//   { icon: "📢", text: "Water Supply Maintenance on 12th May. Expect disruptions." },
+//   { icon: "🛣️", text: "New Road Repair Initiative in Karachi starting next week." },
+// ];
 
 const STATUS_STYLES = {
   "Pending":     { background: "#f59e0b", color: "white" },
   "In Progress": { background: "#3b82f6", color: "white" },
   "Resolved":    { background: "#14863e", color: "white" },
+  "Closed":      { background: "#dc2626", color: "white" },
 };
+function getDepartmentTextStyle(department = "") {
+  const normalized = department.toLowerCase().replace(/[\s-]/g, "");
+  if (normalized.includes("ssgc")) return { color: "#14863e", fontWeight: 700 };
+  if (normalized.includes("ke") || normalized.includes("kelectric")) return { color: "#f97316", fontWeight: 700 };
+  if (normalized.includes("waterboard") || normalized.includes("water")) return { color: "#2563eb", fontWeight: 700 };
+  return { color: "#6b7280" };
+}
 
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -99,11 +107,12 @@ export default function Dashboard() {
 
         {/* ── Welcome Header ── */}
         <div style={{ marginBottom: "24px" }}>
-          <h1 style={{ fontSize: "1.6rem", fontWeight: 700, margin: 0 }}>
+          {/* <h1 style={{ fontSize: "1.6rem", fontWeight: 700, margin: 0 }}>
             Welcome to the{" "}
             <span style={{ color: "#1b3a57" }}>Sindh Citizen Complaint Management</span>{" "}
             System
-          </h1>
+          </h1> */}
+          <h1 style={{ color: '#1b3a57', margin: 0, fontSize: '2.1rem', fontWeight: 800 }}>Welcome to the Sindh Citizen Complaint Portal</h1>
           <p style={{ margin: "6px 0 0", color: "#6b7280", fontSize: "0.95rem" }}>
             Register, track, and manage your complaints online.
           </p>
@@ -208,7 +217,7 @@ export default function Dashboard() {
                     >
                       <td style={{ padding: "11px 12px", fontWeight: 700, color: "#1b3a57" }}>{c.id}</td>
                       <td style={{ padding: "11px 12px", color: "#374151" }}>{c.title}</td>
-                      <td style={{ padding: "11px 12px", color: "#6b7280" }}>{c.dept}</td>
+                      <td style={{ padding: "11px 12px", ...getDepartmentTextStyle(c.dept) }}>{c.dept}</td>
                       <td style={{ padding: "11px 12px" }}>
                         <span style={{
                           ...STATUS_STYLES[c.status],
@@ -269,7 +278,7 @@ export default function Dashboard() {
             </div>
 
             {/* Announcements */}
-            <div style={{ background: "white", borderRadius: "14px", padding: "22px", boxShadow: "0 2px 10px rgba(0,0,0,0.07)" }}>
+            {/* <div style={{ background: "white", borderRadius: "14px", padding: "22px", boxShadow: "0 2px 10px rgba(0,0,0,0.07)" }}>
               <h2 style={{ fontSize: "1.05rem", fontWeight: 700, marginBottom: "14px", color: "#1b3a57" }}>Announcements</h2>
               <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
                 {ANNOUNCEMENTS.map((a, i) => (
@@ -279,7 +288,7 @@ export default function Dashboard() {
                   </div>
                 ))}
               </div>
-            </div>
+            </div> */}
 
             {/* Need Help */}
             <div style={{ background: "white", borderRadius: "14px", padding: "22px", boxShadow: "0 2px 10px rgba(0,0,0,0.07)" }}>

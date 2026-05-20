@@ -58,7 +58,7 @@ function Register() {
       let data = null;
       try {
         data = await res.json();
-      } catch (parseError) {
+      } catch {
         data = null;
       }
       if (!res.ok) {
@@ -178,12 +178,15 @@ function Register() {
         {error ? <div className="mb-3 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{error}</div> : null}
         {success ? <div className="mb-3 rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-700">{success}</div> : null}
 
-        <Button type="submit" fullWidth size="lg" disabled={submitting}>
+        <Button type="submit" fullWidth size="lg" disabled={submitting} className="rounded-lg bg-[#2E4A6F] font-extrabold text-white hover:bg-[#3a5c8a] disabled:opacity-60">
           {submitting ? 'Registering...' : 'Register'}
         </Button>
       </form>
-      <p className="mt-4 text-white">
-        <a href="/" className="text-brand-200 underline">Go back to home</a>
+      <p className="mt-4 text-center text-sm text-[#64748b]">
+        Already have an account? <a href="/login?role=citizen" className="font-bold text-[#2E4A6F] underline">Login here</a>
+      </p>
+      <p className="mt-3 text-center text-sm text-[#64748b]">
+        <a href="/" className="font-bold text-[#2E4A6F] underline">Go back to home</a>
       </p>
     </AuthShell>
   );

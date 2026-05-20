@@ -15,7 +15,7 @@ const statusClassMap = {
   Pending:       'bg-amber-400',
   'In Progress': 'bg-brand-500',
   Resolved:      'bg-emerald-600',
-  Closed:        'bg-gray-400',
+  Closed:        'bg-red-600',
 };
 
 function getTimeline(status) {
@@ -29,6 +29,13 @@ function getTimeline(status) {
   };
   const doneCount = doneUpTo[status] ?? 1;
   return steps.map((label, i) => ({ label, done: i < doneCount }));
+}
+function getDepartmentTextStyle(department = '') {
+  const normalized = department.toLowerCase().replace(/[\s-]/g, '');
+  if (normalized.includes('ssgc')) return { color: '#14863e', fontWeight: 700 };
+  if (normalized.includes('ke') || normalized.includes('kelectric')) return { color: '#f97316', fontWeight: 700 };
+  if (normalized.includes('waterboard') || normalized.includes('water')) return { color: '#2563eb', fontWeight: 700 };
+  return undefined;
 }
 
 // ── Detail Modal ─────────────────────────────────────────────────
@@ -67,7 +74,7 @@ function DetailModal({ complaintId, onClose }) {
               {detail ? `CMP-${String(detail.COMPLAINT_ID).padStart(5, '0')}` : 'Loading…'}
             </h2>
             {detail && (
-              <p className="text-[0.75rem] text-[#6b82a8]">{detail.DEPARTMENT} · Filed {detail.DATE_FILED}</p>
+              <p className="text-[0.75rem] text-[#6b82a8]"><span style={getDepartmentTextStyle(detail.DEPARTMENT)}>{detail.DEPARTMENT}</span> · Filed {detail.DATE_FILED}</p>
             )}
           </div>
           <button
@@ -250,58 +257,63 @@ function Complaint() {
 
       <div className="min-h-full font-[Segoe_UI,Tahoma,Geneva,Verdana,sans-serif] text-[#15213b]">
         <section className="px-3 py-4 sm:px-5 sm:pb-6">
-          <h1 className="mb-3.5 mt-0.5 text-[1.8rem] font-semibold text-[#1e3354]">
-            Complaints &amp; Issue Management
-          </h1>
+          <h1 style={{ color: '#1b3a57', margin: 0, fontSize: '1.6rem', fontWeight: 800 }}>Submit Your Concern</h1>
 
           <div className="grid items-start gap-3 lg:grid-cols-[1fr_260px]">
 
             {/* Submit Form */}
-            <Card className="rounded-md border-[#d5dce8] px-3.5 py-3 shadow-[0_1px_2px_rgba(12,30,59,0.08)]">
-              <h2 className="mb-3 mt-0.5 text-base font-semibold text-[#243c63]">Submit New Complaint</h2>
-              <div className="space-y-2.5">
-                <div className="grid items-center gap-2 md:grid-cols-[160px_1fr]">
-                  <label htmlFor="department" className="text-[0.83rem] font-semibold text-[#314a6f]">Department</label>
-                  <SelectInput id="department" value={deptId} onChange={e => setDeptId(e.target.value)}
-                    className="rounded-[3px] border-[#ccd4e2] px-2 py-1.5 text-[0.83rem] focus:ring-1">
-                    {departments.map(d => <option key={d.DEPT_ID} value={d.DEPT_ID}>{d.DEPT_NAME}</option>)}
-                  </SelectInput>
+            <Card className="overflow-hidden rounded-xl border border-[#d5dce8] bg-white p-0 shadow-[0_2px_10px_rgba(12,30,59,0.08)]">
+              <div className="border-b border-[#e0e6ef] bg-[#f8fafc] px-5 py-4">
+                <h2 className="m-0 text-[1.05rem] font-bold text-[#1b3a57]">Submit New Complaint</h2>
+                <p className="mt-1 text-[0.82rem] text-[#64748b]">Add the department, subject, description, and any supporting document.</p>
+              </div>
+
+              <div className="space-y-4 px-5 py-4">
+                <div className="grid gap-4 md:grid-cols-2">
+                  <label htmlFor="department" className="grid gap-1.5 text-[0.83rem] font-bold text-[#314a6f]">
+                    Department
+                    <SelectInput id="department" value={deptId} onChange={e => setDeptId(e.target.value)}
+                      className="rounded-lg border-[#ccd4e2] bg-white px-3 py-2 text-[0.88rem] focus:ring-1">
+                      {departments.map(d => <option key={d.DEPT_ID} value={d.DEPT_ID}>{d.DEPT_NAME}</option>)}
+                    </SelectInput>
+                  </label>
+                  <label htmlFor="subject" className="grid gap-1.5 text-[0.83rem] font-bold text-[#314a6f]">
+                    Subject
+                    <TextInput id="subject" type="text" value={title} onChange={e => setTitle(e.target.value)}
+                      className="rounded-lg border-[#ccd4e2] bg-white px-3 py-2 text-[0.88rem] focus:ring-1" />
+                  </label>
                 </div>
-                <div className="grid items-center gap-2 md:grid-cols-[160px_1fr]">
-                  <label htmlFor="subject" className="text-[0.83rem] font-semibold text-[#314a6f]">Subject</label>
-                  <TextInput id="subject" type="text" value={title} onChange={e => setTitle(e.target.value)}
-                    className="rounded-[3px] border-[#ccd4e2] px-2 py-1.5 text-[0.83rem] focus:ring-1" />
-                </div>
-                <div className="grid items-center gap-2 md:grid-cols-[160px_1fr]">
-                  <label htmlFor="desc" className="text-[0.83rem] font-semibold text-[#314a6f]">Complaint Description</label>
+
+                <label htmlFor="desc" className="grid gap-1.5 text-[0.83rem] font-bold text-[#314a6f]">
+                  Complaint Description
                   <TextArea id="desc" value={description} onChange={e => setDescription(e.target.value)}
-                    className="min-h-11 resize-none rounded-[3px] border-[#ccd4e2] px-2 py-1.5 text-[0.83rem] focus:ring-1" />
-                </div>
+                    className="min-h-24 resize-none rounded-lg border-[#ccd4e2] bg-white px-3 py-2 text-[0.88rem] focus:ring-1" />
+                </label>
+
                 <input ref={fileRef} type="file" className="hidden" onChange={handleFile} />
-                <div className="grid gap-2 pt-1 md:grid-cols-[1fr_auto] md:items-center">
-                  <div className="flex items-center gap-2">
+                <div className="flex flex-wrap items-center justify-between gap-3 border-t border-[#edf2f7] pt-4">
+                  <div className="flex min-w-0 items-center gap-2">
                     <Button type="button" variant="muted" onClick={() => fileRef.current?.click()}
-                      className="justify-self-start rounded-[3px] border border-[#c8d4e6] bg-[#f6f8fb] px-3 py-1.5 text-sm text-[#254265]">
-                      {fileData ? `📎 ${fileData.name}` : 'Upload Document'}
+                      className="rounded-lg border border-[#c8d4e6] bg-[#f6f8fb] px-3 py-2 text-sm font-semibold text-[#254265] hover:bg-[#eef3fb]">
+                      {fileData ? `Attached: ${fileData.name}` : 'Upload Document'}
                     </Button>
                     {fileData && (
                       <button onClick={() => { setFileData(null); if (fileRef.current) fileRef.current.value = ''; }}
-                        className="text-xs text-red-400 hover:text-red-600">✕</button>
+                        className="rounded-md px-2 py-1 text-xs font-bold text-red-500 hover:bg-red-50 hover:text-red-600">Remove</button>
                     )}
                   </div>
                   <Button type="button" variant="success" onClick={handleSubmit} disabled={loading}
-                    className="rounded-[3px] px-[18px] py-[7px] text-sm disabled:opacity-60">
-                    {loading ? 'Submitting…' : 'Submit Complaint'}
+                    className="rounded-lg bg-[#14863e] px-5 py-2 text-sm font-bold disabled:opacity-60">
+                    {loading ? 'Submitting...' : 'Submit Complaint'}
                   </Button>
                 </div>
                 {submitMsg && (
-                  <p className={`text-[0.8rem] ${submitMsg.startsWith('✅') ? 'text-emerald-600' : 'text-red-500'}`}>
+                  <p className={`rounded-lg px-3 py-2 text-[0.82rem] font-semibold ${submitMsg.startsWith('✅') ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-600'}`}>
                     {submitMsg}
                   </p>
                 )}
               </div>
             </Card>
-
             {/* Timeline */}
             <Card className="rounded-md border-[#d5dce8] px-3.5 py-3 shadow-[0_1px_2px_rgba(12,30,59,0.08)]">
               <h2 className="mb-1 mt-0.5 text-base font-semibold text-[#243c63]">Complaint Timeline</h2>
@@ -342,15 +354,17 @@ function Complaint() {
                     <tr>
                       <td colSpan={6} className="py-6 text-center text-[0.82rem] text-[#8a9abb]">No complaints found.</td>
                     </tr>
-                  ) : complaints.map(item => (
+                  ) : complaints.map(item => {
+                    const isSelected = selected?.COMPLAINT_ID === item.COMPLAINT_ID;
+                    return (
                     <tr key={item.COMPLAINT_ID}
                       onClick={() => setSelected(item)}
-                      className={`cursor-pointer transition-colors hover:bg-[#f5f8fd] ${selected?.COMPLAINT_ID === item.COMPLAINT_ID ? 'bg-[#eef3fb]' : ''}`}
+                      className={`cursor-pointer transition-colors hover:bg-[#f5f8fd] ${isSelected ? 'bg-[#dbeafe] shadow-[inset_4px_0_0_#2563eb]' : ''}`}
                     >
                       <td className="border-b border-[#e0e6ef] px-2.5 py-2 text-[0.8rem]">
                         {`CMP-${String(item.COMPLAINT_ID).padStart(5, '0')}`}
                       </td>
-                      <td className="border-b border-[#e0e6ef] px-2.5 py-2 text-[0.8rem]">{item.DEPARTMENT}</td>
+                      <td className="border-b border-[#e0e6ef] px-2.5 py-2 text-[0.8rem]" style={getDepartmentTextStyle(item.DEPARTMENT)}>{item.DEPARTMENT}</td>
                       <td className="border-b border-[#e0e6ef] px-2.5 py-2 text-[0.8rem]">{item.DATE_FILED}</td>
                       <td className="border-b border-[#e0e6ef] px-2.5 py-2 text-[0.8rem]">
                         <span className={`inline-block min-w-[74px] rounded-[3px] px-1.5 py-[3px] text-center text-[0.72rem] font-bold text-white ${statusClassMap[item.STATUS] ?? 'bg-gray-400'}`}>
@@ -368,7 +382,8 @@ function Complaint() {
                         </Button>
                       </td>
                     </tr>
-                  ))}
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
