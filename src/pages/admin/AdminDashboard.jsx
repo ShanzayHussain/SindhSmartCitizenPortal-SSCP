@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Cell, Legend, Pie, PieChart, ResponsiveContainer, Tooltip } from 'recharts';
 import AdminLayout from './AdminLayout';
+import { apiFetch } from '../../lib/api';
 
 const STATUS_STYLES = {
   Pending: { background: '#f59e0b', color: 'white' },
@@ -25,10 +26,7 @@ export default function AdminDashboard() {
   const [error, setError] = useState('');
 
   useEffect(() => {
-    const token = localStorage.getItem('token');
-    fetch('/api/admin/dashboard', {
-      headers: { Authorization: `Bearer ${token}` },
-    })
+    apiFetch('/admin/dashboard')
       .then((res) => {
         if (!res.ok) throw new Error('Failed to load admin dashboard.');
         return res.json();

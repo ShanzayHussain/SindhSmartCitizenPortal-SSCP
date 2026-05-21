@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import AdminLayout from './AdminLayout';
+import { apiFetch } from '../../lib/api';
 
 function getDepartmentTextStyle(department = '') {
   const normalized = department.toLowerCase().replace(/[\s-]/g, '');
@@ -10,13 +11,12 @@ function getDepartmentTextStyle(department = '') {
 }
 
 export default function AdminDepartments() {
-  const token = localStorage.getItem('token');
   const [departments, setDepartments] = useState([]);
   const [deptName, setDeptName] = useState('');
   const [editId, setEditId] = useState(null);
 
   function loadDepartments() {
-    fetch('/api/admin/departments', { headers: { Authorization: `Bearer ${token}` } })
+    apiFetch('/admin/departments')
       .then((r) => r.json())
       .then((d) => setDepartments(Array.isArray(d) ? d : []));
   }
@@ -24,11 +24,10 @@ export default function AdminDepartments() {
   useEffect(() => { loadDepartments(); }, []);
 
   async function save() {
-    const url = editId ? `/api/admin/departments/${editId}` : '/api/admin/departments';
+    const url = editId ? `/admin/departments/${editId}` : '/admin/departments';
     const method = editId ? 'PUT' : 'POST';
-    await fetch(url, {
+    await apiFetch(url, {
       method,
-      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({ dept_name: deptName }),
     });
     setDeptName('');

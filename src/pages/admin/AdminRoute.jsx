@@ -1,19 +1,12 @@
 import { useEffect, useState } from 'react';
 import { Navigate } from 'react-router-dom';
+import { apiFetch } from '../../lib/api';
 
 export default function AdminRoute({ children }) {
   const [state, setState] = useState({ loading: true, allowed: false });
 
   useEffect(() => {
-    const token = localStorage.getItem('token');
-    if (!token) {
-      setState({ loading: false, allowed: false });
-      return;
-    }
-
-    fetch('/api/auth/me', {
-      headers: { Authorization: `Bearer ${token}` },
-    })
+    apiFetch('/auth/me')
       .then((res) => {
         if (!res.ok) throw new Error('Unauthorized');
         return res.json();

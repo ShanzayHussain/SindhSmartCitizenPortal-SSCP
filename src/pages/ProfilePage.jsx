@@ -1,10 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import DashboardLayout from './DashboardLayout';
-
-function getAuthHeaders(extra = {}) {
-  const token = localStorage.getItem('token');
-  return token ? { Authorization: `Bearer ${token}`, ...extra } : { ...extra };
-}
+import { apiFetch } from '../lib/api';
 
 const inputClass = 'w-full rounded-lg border border-[#ccd4e2] bg-white px-3 py-2 text-[0.88rem] text-[#1f2937] focus:outline-none focus:ring-1 focus:ring-[#1b3a57] disabled:bg-[#f8fafc] disabled:text-[#64748b]';
 
@@ -33,7 +29,7 @@ export default function Profile() {
 
   useEffect(() => {
     if (!user.user_id) return;
-    fetch(`/api/users/${user.user_id}/logs`, { headers: getAuthHeaders() })
+    apiFetch(`/users/${user.user_id}/logs`)
       .then((r) => r.json())
       .then((data) => {
         if (!Array.isArray(data)) return;
@@ -50,7 +46,7 @@ export default function Profile() {
 
   useEffect(() => {
     if (!user.user_id) return;
-    fetch(`/api/dashboard/${user.user_id}`, { headers: getAuthHeaders() })
+    apiFetch(`/dashboard/${user.user_id}`)
       .then((r) => r.json())
       .then((data) => {
         const stats = data?.stats || {};
@@ -69,9 +65,8 @@ export default function Profile() {
     const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
 
     try {
-      const res = await fetch(`/api/users/${currentUser.user_id}`, {
+      const res = await apiFetch(`/users/${currentUser.user_id}`, {
         method: 'PUT',
-        headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
         body: JSON.stringify({
           full_name: form.name,
           father_name: form.father,

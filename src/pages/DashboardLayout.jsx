@@ -2,8 +2,8 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { Bell, Building2, FileText, Home, LogOut, User } from 'lucide-react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import logo from '../assets/logo.jpg';
+import { apiFetch } from '../lib/api';
 
-const API = 'http://localhost:5000/api';
 
 const SIDEBAR_LINKS = [
   { name: 'Dashboard', href: '/dashboard', icon: Home },
@@ -13,10 +13,6 @@ const SIDEBAR_LINKS = [
   { name: 'Logout', href: '/', icon: LogOut },
 ];
 
-function getAuthHeaders() {
-  const token = localStorage.getItem('token');
-  return token ? { Authorization: `Bearer ${token}` } : {};
-}
 
 function getCurrentUser() {
   try {
@@ -64,7 +60,7 @@ export default function DashboardLayout({ children }) {
 
     async function loadComplaintUpdates() {
       try {
-        const res = await fetch(`${API}/complaints/user/${userId}`, { headers: getAuthHeaders() });
+        const res = await apiFetch(`/complaints/user/${userId}`);
         const data = await res.json().catch(() => []);
         if (!res.ok || !Array.isArray(data) || !mounted) return;
 

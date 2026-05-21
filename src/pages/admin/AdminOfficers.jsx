@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import AdminLayout from './AdminLayout';
+import { apiFetch } from '../../lib/api';
 
 function getDepartmentTextStyle(department = '') {
   const normalized = department.toLowerCase().replace(/[\s-]/g, '');
@@ -19,31 +20,29 @@ const fieldStyle = {
 };
 
 export default function AdminOfficers() {
-  const token = localStorage.getItem('token');
   const [officers, setOfficers] = useState([]);
   const [departments, setDepartments] = useState([]);
   const [form, setForm] = useState({ officer_name: '', dept_id: '' });
   const [editId, setEditId] = useState(null);
 
   function loadOfficers() {
-    fetch('/api/admin/officers', { headers: { Authorization: `Bearer ${token}` } })
+    apiFetch('/admin/officers')
       .then((r) => r.json())
       .then((d) => setOfficers(Array.isArray(d) ? d : []));
   }
 
   useEffect(() => {
     loadOfficers();
-    fetch('/api/admin/departments', { headers: { Authorization: `Bearer ${token}` } })
+    apiFetch('/admin/departments')
       .then((r) => r.json())
       .then((d) => setDepartments(Array.isArray(d) ? d : []));
   }, []);
 
   async function save() {
-    const url = editId ? `/api/admin/officers/${editId}` : '/api/admin/officers';
+    const url = editId ? `/admin/officers/${editId}` : '/admin/officers';
     const method = editId ? 'PUT' : 'POST';
-    await fetch(url, {
+    await apiFetch(url, {
       method,
-      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
       body: JSON.stringify(form),
     });
     setForm({ officer_name: '', dept_id: '' });

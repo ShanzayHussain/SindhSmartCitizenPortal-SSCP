@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import AdminLayout from './AdminLayout';
+import { apiFetch } from '../../lib/api';
 
 const STATUSES = ['Pending', 'In Progress', 'Resolved', 'Closed'];
 
@@ -61,7 +62,6 @@ function base64ToBlob(base64, mimeType) {
 }
 
 export default function AdminComplaints() {
-  const token = localStorage.getItem('token');
   const [complaints, setComplaints] = useState([]);
   const [departments, setDepartments] = useState([]);
   const [officers, setOfficers] = useState([]);
@@ -80,9 +80,7 @@ export default function AdminComplaints() {
     if (nextFilters.dept_id) q.set('dept_id', nextFilters.dept_id);
 
     try {
-      const res = await fetch(`/api/admin/complaints?${q.toString()}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const res = await apiFetch(`/admin/complaints?${q.toString()}`);
       const data = await res.json().catch(() => []);
       if (!res.ok) throw new Error(data?.message || 'Could not load complaints.');
       setComplaints(Array.isArray(data) ? data : []);
@@ -98,7 +96,7 @@ export default function AdminComplaints() {
   }, [filters.status, filters.search, filters.dept_id]);
 
   useEffect(() => {
-    fetch('/api/admin/departments', { headers: { Authorization: `Bearer ${token}` } })
+    apiFetch('/admin/departments')
       .then(async (res) => {
         const data = await res.json().catch(() => []);
         if (!res.ok) throw new Error(data?.message || 'Could not load departments.');
@@ -114,9 +112,7 @@ export default function AdminComplaints() {
     setError('');
     setMessage('');
 
-    fetch(`/api/admin/complaints/${selected.COMPLAINT_ID}`, {
-      headers: { Authorization: `Bearer ${token}` },
-    })
+    apiFetch(`/admin/complaints/${selected.COMPLAINT_ID}`)
       .then(async (res) => {
         const detail = await res.json().catch(() => ({}));
         if (!res.ok) throw new Error(detail?.details || detail?.message || 'Could not load complaint detail.');
@@ -136,9 +132,7 @@ export default function AdminComplaints() {
 
   useEffect(() => {
     if (!selected?.DEPT_ID) return;
-    fetch(`/api/admin/officers?dept_id=${selected.DEPT_ID}`, {
-      headers: { Authorization: `Bearer ${token}` },
-    })
+    apiFetch(`/admin/officers?dept_id=${selected.DEPT_ID}`)
       .then(async (res) => {
         const data = await res.json().catch(() => []);
         if (!res.ok) throw new Error(data?.message || 'Could not load officers.');
@@ -160,9 +154,8 @@ export default function AdminComplaints() {
     setMessage('');
 
     try {
-      const res = await fetch(`/api/admin/complaints/${selected.COMPLAINT_ID}`, {
+      const res = await apiFetch(`/admin/complaints/${selected.COMPLAINT_ID}`, {
         method: 'PUT',
-        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
         body: JSON.stringify(form),
       });
       const data = await res.json().catch(() => ({}));
@@ -190,9 +183,7 @@ export default function AdminComplaints() {
   async function openDocument(docId) {
     setError('');
     try {
-      const res = await fetch(`/api/admin/documents/${docId}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const res = await apiFetch(`/admin/documents/${docId}`);
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data?.message || 'Could not open document.');
       if (!data?.file_data) throw new Error('Document data is empty.');

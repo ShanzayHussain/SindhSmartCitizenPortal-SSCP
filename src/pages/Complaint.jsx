@@ -3,13 +3,9 @@ import Button from '../components/ui/Button';
 import Card from '../components/ui/Card';
 import { SelectInput, TextArea, TextInput } from '../components/ui/FormField';
 import DashboardLayout from './DashboardLayout';
+import { apiFetch } from '../lib/api';
 
 const API = 'http://localhost:5000/api';
-
-function getAuthHeaders(extra = {}) {
-  const token = localStorage.getItem('token');
-  return token ? { Authorization: `Bearer ${token}`, ...extra } : { ...extra };
-}
 
 const statusClassMap = {
   Pending:       'bg-amber-400',
@@ -47,9 +43,7 @@ function DetailModal({ complaintId, onClose }) {
   useEffect(() => {
     if (!complaintId) return;
     setLoading(true);
-    fetch(`${API}/complaints/${complaintId}`, {
-      headers: getAuthHeaders(),
-    })
+    apiFetch(`/complaints/${complaintId}`)
       .then(r => r.json())
       .then(data => { setDetail(data); setLoading(false); })
       .catch(() => { setError('Failed to load details.'); setLoading(false); });
@@ -194,9 +188,7 @@ function Complaint() {
 
   const fetchComplaints = () => {
     if (!userId) return;
-    fetch(`${API}/complaints/user/${userId}`, {
-      headers: getAuthHeaders(),
-    })
+    apiFetch(`/complaints/user/${userId}`)
       .then(r => r.json())
       .then(data => {
         setComplaints(data);
@@ -220,18 +212,16 @@ function Complaint() {
     if (!deptId)       return setSubmitMsg('Please select a department.');
     setLoading(true); setSubmitMsg('');
     try {
-      const res  = await fetch(`${API}/complaints`, {
+      const res  = await apiFetch('/complaints', {
         method: 'POST',
-        headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
         body: JSON.stringify({ user_id: userId, dept_id: deptId, title, description }),
       });
       const data = await res.json();
       if (!res.ok) return setSubmitMsg(data.message || 'Submission failed.');
 
       if (fileData) {
-        await fetch(`${API}/complaints/${data.complaint_id}/documents`, {
+        await apiFetch(`/complaints/${data.complaint_id}/documents`, {
           method: 'POST',
-          headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
           body: JSON.stringify({ file_name: fileData.name, file_data: fileData.base64 }),
         });
       }

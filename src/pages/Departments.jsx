@@ -2,13 +2,9 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Building2, Droplets, Flame, Zap } from 'lucide-react';
 import DashboardLayout from './DashboardLayout';
+import { apiFetch } from '../lib/api';
 
 const API = 'http://localhost:5000/api';
-
-function getAuthHeaders() {
-  const token = localStorage.getItem('token');
-  return token ? { Authorization: `Bearer ${token}` } : {};
-}
 
 function getDepartmentMeta(name = '') {
   const normalized = name.toLowerCase().replace(/[\s-]/g, '');
@@ -37,7 +33,7 @@ export default function Departments() {
     Promise.all([
       fetch(`${API}/departments`).then((r) => r.json()),
       userId
-        ? fetch(`${API}/complaints/user/${userId}`, { headers: getAuthHeaders() }).then((r) => r.json())
+        ? apiFetch(`/complaints/user/${userId}`).then((r) => r.json())
         : Promise.resolve([]),
     ])
       .then(([depts, complaints]) => {

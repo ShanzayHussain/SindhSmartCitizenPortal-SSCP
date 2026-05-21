@@ -5,13 +5,7 @@ import DashboardLayout from "./DashboardLayout";
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell
 } from "recharts";
-
-const API = "/api";
-
-function getAuthHeaders() {
-  const token = localStorage.getItem('token');
-  return token ? { Authorization: `Bearer ${token}` } : {};
-}
+import { apiFetch } from "../lib/api";
 
 // const ANNOUNCEMENTS = [
 //   { icon: "📢", text: "Water Supply Maintenance on 12th May. Expect disruptions." },
@@ -67,9 +61,7 @@ export default function Dashboard() {
     if (!userId) return;
 
     let mounted = true;
-    fetch(`${API}/dashboard/${userId}`, {
-      headers: getAuthHeaders(),
-    })
+    apiFetch(`/dashboard/${userId}`)
       .then(async (res) => {
         const data = await res.json().catch(() => ({}));
         if (!res.ok) {
