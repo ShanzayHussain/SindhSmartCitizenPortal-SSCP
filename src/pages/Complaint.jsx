@@ -210,7 +210,7 @@ function Complaint() {
   const handleSubmit = async () => {
     if (!title.trim()) return setSubmitMsg('Please enter a subject.');
     if (!deptId)       return setSubmitMsg('Please select a department.');
-    loading(true); setSubmitMsg('');
+    setLoading(true); setSubmitMsg('');
     try {
       const res  = await apiFetch('/complaints', {
         method: 'POST',
