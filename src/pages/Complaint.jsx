@@ -52,7 +52,7 @@ function DetailModal({ complaintId, onClose }) {
   // Close on backdrop click
   const handleBackdrop = (e) => { if (e.target === e.currentTarget) onClose(); };
 
-  const timeline = detail ? getTimeline(detail.STATUS) : [];
+  const timeline = detail ? getTimeline(detail.status) : [];
 
   return (
     <div
@@ -65,10 +65,10 @@ function DetailModal({ complaintId, onClose }) {
         <div className="flex items-center justify-between border-b border-[#e0e6ef] px-5 py-3.5">
           <div>
             <h2 className="text-[1rem] font-semibold text-[#1e3354]">
-              {detail ? `CMP-${String(detail.COMPLAINT_ID).padStart(5, '0')}` : 'Loading…'}
+              {detail ? `CMP-${String(detail.complaint_id).padStart(5, '0')}` : 'Loading…'}
             </h2>
             {detail && (
-              <p className="text-[0.75rem] text-[#6b82a8]"><span style={getDepartmentTextStyle(detail.DEPARTMENT)}>{detail.DEPARTMENT}</span> · Filed {detail.DATE_FILED}</p>
+              <p className="text-[0.75rem] text-[#6b82a8]"><span style={getDepartmentTextStyle(detail.department)}>{detail.department}</span> · Filed {detail.date_filed}</p>
             )}
           </div>
           <button
@@ -89,18 +89,18 @@ function DetailModal({ complaintId, onClose }) {
               <div className="flex flex-wrap gap-4">
                 <div>
                   <p className="mb-1 text-[0.72rem] font-semibold uppercase tracking-wide text-[#8a9abb]">Status</p>
-                  <span className={`inline-block rounded-[3px] px-2 py-[3px] text-[0.72rem] font-bold text-white ${statusClassMap[detail.STATUS] ?? 'bg-gray-400'}`}>
-                    {detail.STATUS}
+                  <span className={`inline-block rounded-[3px] px-2 py-[3px] text-[0.72rem] font-bold text-white ${statusClassMap[detail.status] ?? 'bg-gray-400'}`}>
+                    {detail.status}
                   </span>
                 </div>
                 <div>
                   <p className="mb-1 text-[0.72rem] font-semibold uppercase tracking-wide text-[#8a9abb]">Assigned Officer</p>
-                  <p className="text-[0.83rem] font-semibold text-[#1e3354]">{detail.OFFICER}</p>
+                  <p className="text-[0.83rem] font-semibold text-[#1e3354]">{detail.officer}</p>
                 </div>
-                {detail.DATE_RESOLVED && (
+                {detail.date_resolved && (
                   <div>
                     <p className="mb-1 text-[0.72rem] font-semibold uppercase tracking-wide text-[#8a9abb]">Resolved On</p>
-                    <p className="text-[0.83rem] text-[#1e3354]">{detail.DATE_RESOLVED}</p>
+                    <p className="text-[0.83rem] text-[#1e3354]">{detail.date_resolved}</p>
                   </div>
                 )}
               </div>
@@ -108,15 +108,15 @@ function DetailModal({ complaintId, onClose }) {
               {/* Title */}
               <div>
                 <p className="mb-1 text-[0.72rem] font-semibold uppercase tracking-wide text-[#8a9abb]">Subject</p>
-                <p className="text-[0.85rem] font-semibold text-[#1e3354]">{detail.TITLE}</p>
+                <p className="text-[0.85rem] font-semibold text-[#1e3354]">{detail.title}</p>
               </div>
 
               {/* Description */}
-              {detail.DESCRIPTION && (
+              {detail.description && (
                 <div>
                   <p className="mb-1 text-[0.72rem] font-semibold uppercase tracking-wide text-[#8a9abb]">Description</p>
                   <p className="rounded-md bg-[#f6f8fb] px-3 py-2.5 text-[0.83rem] leading-relaxed text-[#2c4368]">
-                    {detail.DESCRIPTION}
+                    {detail.description}
                   </p>
                 </div>
               )}
@@ -182,7 +182,7 @@ function Complaint() {
   useEffect(() => {
     fetch(`${API}/departments`)
       .then(r => r.json())
-      .then(data => { setDepartments(data); if (data.length) setDeptId(data[0].DEPT_ID); })
+      .then(data => { setDepartments(data); if (data.length) setDeptId(data[0].dept_id); })
       .catch(console.error);
   }, []);
 
@@ -210,7 +210,7 @@ function Complaint() {
   const handleSubmit = async () => {
     if (!title.trim()) return setSubmitMsg('Please enter a subject.');
     if (!deptId)       return setSubmitMsg('Please select a department.');
-    setLoading(true); setSubmitMsg('');
+    loading(true); setSubmitMsg('');
     try {
       const res  = await apiFetch('/complaints', {
         method: 'POST',
@@ -237,7 +237,7 @@ function Complaint() {
     }
   };
 
-  const timelineStatus = selected?.STATUS ?? 'Pending';
+  const timelineStatus = selected?.status ?? 'Pending';
   const timeline       = getTimeline(timelineStatus);
 
   return (
@@ -264,7 +264,7 @@ function Complaint() {
                     Department
                     <SelectInput id="department" value={deptId} onChange={e => setDeptId(e.target.value)}
                       className="rounded-lg border-[#ccd4e2] bg-white px-3 py-2 text-[0.88rem] focus:ring-1">
-                      {departments.map(d => <option key={d.DEPT_ID} value={d.DEPT_ID}>{d.DEPT_NAME}</option>)}
+                      {departments.map(d => <option key={d.dept_id} value={d.dept_id}>{d.dept_name}</option>)}
                     </SelectInput>
                   </label>
                   <label htmlFor="subject" className="grid gap-1.5 text-[0.83rem] font-bold text-[#314a6f]">
@@ -309,7 +309,7 @@ function Complaint() {
               <h2 className="mb-1 mt-0.5 text-base font-semibold text-[#243c63]">Complaint Timeline</h2>
               {selected && (
                 <p className="mb-3 text-[0.72rem] text-[#6b82a8]">
-                  {`CMP-${String(selected.COMPLAINT_ID).padStart(5, '0')}`} · {selected.STATUS}
+                  {`CMP-${String(selected.complaint_id).padStart(5, '0')}`} · {selected.status}
                 </p>
               )}
               <ul className="flex list-none flex-col gap-3.5 p-0">
@@ -345,27 +345,27 @@ function Complaint() {
                       <td colSpan={6} className="py-6 text-center text-[0.82rem] text-[#8a9abb]">No complaints found.</td>
                     </tr>
                   ) : complaints.map(item => {
-                    const isSelected = selected?.COMPLAINT_ID === item.COMPLAINT_ID;
+                    const isSelected = selected?.complaint_id === item.complaint_id;
                     return (
-                    <tr key={item.COMPLAINT_ID}
+                    <tr key={item.complaint_id}
                       onClick={() => setSelected(item)}
                       className={`cursor-pointer transition-colors hover:bg-[#f5f8fd] ${isSelected ? 'bg-[#dbeafe] shadow-[inset_4px_0_0_#2563eb]' : ''}`}
                     >
                       <td className="border-b border-[#e0e6ef] px-2.5 py-2 text-[0.8rem]">
-                        {`CMP-${String(item.COMPLAINT_ID).padStart(5, '0')}`}
+                        {`CMP-${String(item.complaint_id).padStart(5, '0')}`}
                       </td>
-                      <td className="border-b border-[#e0e6ef] px-2.5 py-2 text-[0.8rem]" style={getDepartmentTextStyle(item.DEPARTMENT)}>{item.DEPARTMENT}</td>
-                      <td className="border-b border-[#e0e6ef] px-2.5 py-2 text-[0.8rem]">{item.DATE_FILED}</td>
+                      <td className="border-b border-[#e0e6ef] px-2.5 py-2 text-[0.8rem]" style={getDepartmentTextStyle(item.department)}>{item.department}</td>
+                      <td className="border-b border-[#e0e6ef] px-2.5 py-2 text-[0.8rem]">{item.date_filed}</td>
                       <td className="border-b border-[#e0e6ef] px-2.5 py-2 text-[0.8rem]">
-                        <span className={`inline-block min-w-[74px] rounded-[3px] px-1.5 py-[3px] text-center text-[0.72rem] font-bold text-white ${statusClassMap[item.STATUS] ?? 'bg-gray-400'}`}>
-                          {item.STATUS}
+                        <span className={`inline-block min-w-[74px] rounded-[3px] px-1.5 py-[3px] text-center text-[0.72rem] font-bold text-white ${statusClassMap[item.status] ?? 'bg-gray-400'}`}>
+                          {item.status}
                         </span>
                       </td>
-                      <td className="border-b border-[#e0e6ef] px-2.5 py-2 text-[0.8rem]">{item.OFFICER}</td>
+                      <td className="border-b border-[#e0e6ef] px-2.5 py-2 text-[0.8rem]">{item.officer}</td>
                       <td className="border-b border-[#e0e6ef] px-2.5 py-2 text-[0.8rem]">
                         <Button
                           type="button"
-                          onClick={e => { e.stopPropagation(); setModalId(item.COMPLAINT_ID); }}
+                          onClick={e => { e.stopPropagation(); setModalId(item.complaint_id); }}
                           className="rounded-[3px] bg-[#2f69b3] px-2 py-[5px] text-[0.72rem] hover:bg-[#255a9b]"
                         >
                           View Details

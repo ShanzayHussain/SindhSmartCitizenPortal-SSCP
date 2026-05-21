@@ -11,7 +11,7 @@ function getDepartmentMeta(name = '') {
   if (normalized.includes('ssgc')) {
     return { Icon: Flame, color: '#14863e', tint: '#e8f7ee', description: 'Gas supply and distribution services' };
   }
-  if (normalized.includes('ke') || normalized.includes('kelectric')) {
+  if (normalized.includes('ke')) {
     return { Icon: Zap, color: '#f97316', tint: '#fff3e8', description: 'Electricity supply and distribution services' };
   }
   if (normalized.includes('waterboard') || normalized.includes('water')) {
@@ -42,8 +42,8 @@ export default function Departments() {
         const countMap = {};
 
         safeComplaints.forEach((complaint) => {
-          const dept = safeDepartments.find((item) => item.DEPT_NAME === complaint.DEPARTMENT);
-          if (dept) countMap[dept.DEPT_ID] = (countMap[dept.DEPT_ID] || 0) + 1;
+          const dept = safeDepartments.find((item) => item.dept_name === complaint.department);
+          if (dept) countMap[dept.dept_id] = (countMap[dept.dept_id] || 0) + 1;
         });
 
         setDepartments(safeDepartments);
@@ -84,13 +84,13 @@ export default function Departments() {
           ) : (
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: '16px' }}>
               {departments.map((dept) => {
-                const meta = getDepartmentMeta(dept.DEPT_NAME);
+                const meta = getDepartmentMeta(dept.dept_name);
                 const Icon = meta.Icon;
-                const count = counts[dept.DEPT_ID] ?? 0;
+                const count = counts[dept.dept_id] ?? 0;
 
                 return (
                   <button
-                    key={dept.DEPT_ID}
+                    key={dept.dept_id}
                     onClick={() => navigate('/complaint')}
                     style={{ textAlign: 'left', background: '#ffffff', border: '1px solid #e5e7eb', borderRadius: '12px', padding: '18px', boxShadow: '0 1px 4px rgba(15,23,42,0.06)', cursor: 'pointer' }}
                   >
@@ -99,7 +99,7 @@ export default function Departments() {
                         <Icon size={24} />
                       </span>
                       <div>
-                        <h3 style={{ margin: 0, color: meta.color, fontSize: '1rem', fontWeight: 800 }}>{dept.DEPT_NAME}</h3>
+                        <h3 style={{ margin: 0, color: meta.color, fontSize: '1rem', fontWeight: 800 }}>{dept.dept_name}</h3>
                         <p style={{ margin: '4px 0 0', color: '#64748b', fontSize: '0.82rem' }}>{meta.description}</p>
                       </div>
                     </div>

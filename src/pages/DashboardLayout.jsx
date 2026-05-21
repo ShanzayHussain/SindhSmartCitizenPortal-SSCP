@@ -24,10 +24,10 @@ function getCurrentUser() {
 
 function getComplaintFingerprint(complaint) {
   return [
-    complaint.STATUS || '',
-    complaint.OFFICER || '',
-    complaint.TITLE || '',
-    complaint.DEPARTMENT || '',
+    complaint.status || '',
+    complaint.officer || '',
+    complaint.title || '',
+    complaint.department || '',
   ].join('|');
 }
 
@@ -69,18 +69,18 @@ export default function DashboardLayout({ children }) {
         const updates = [];
 
         data.forEach((complaint) => {
-          const id = String(complaint.COMPLAINT_ID);
+          const id = String(complaint.complaint_id);
           const fingerprint = getComplaintFingerprint(complaint);
           nextSnapshot[id] = fingerprint;
 
           if (previousSnapshot && previousSnapshot[id] && previousSnapshot[id] !== fingerprint) {
             updates.push({
               key: `${id}:${fingerprint}`,
-              complaintId: complaint.COMPLAINT_ID,
-              title: complaint.TITLE || `Complaint ${complaint.COMPLAINT_ID}`,
-              status: complaint.STATUS || 'Updated',
-              officer: complaint.OFFICER || 'Not Assigned',
-              department: complaint.DEPARTMENT || '',
+              complaintId: complaint.complaint_id,
+              title: complaint.title || `Complaint ${complaint.complaint_id}`,
+              status: complaint.status || 'Updated',
+              officer: complaint.officer || 'Not Assigned',
+              department: complaint.department || '',
             });
           }
         });
@@ -231,7 +231,7 @@ export default function DashboardLayout({ children }) {
                       </div>
                       <div style={{ color: '#334155', fontSize: '0.84rem', marginTop: '4px' }}>{item.title}</div>
                       <div style={{ color: '#64748b', fontSize: '0.76rem', marginTop: '3px' }}>
-                        {item.department} · Officer: {item.officer}
+                        {item.department} â€¢ Officer: {item.officer}
                       </div>
                     </button>
                   ))}

@@ -1,4 +1,3 @@
-
 import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import DashboardLayout from "./DashboardLayout";
@@ -207,9 +206,9 @@ export default function Dashboard() {
                       onMouseEnter={e => e.currentTarget.style.background = "#f9fafb"}
                       onMouseLeave={e => e.currentTarget.style.background = "transparent"}
                     >
-                      <td style={{ padding: "11px 12px", fontWeight: 700, color: "#1b3a57" }}>{c.id}</td>
+                      <td style={{ padding: "11px 12px", fontWeight: 700, color: "#1b3a57" }}>{c.complaint_id}</td>
                       <td style={{ padding: "11px 12px", color: "#374151" }}>{c.title}</td>
-                      <td style={{ padding: "11px 12px", ...getDepartmentTextStyle(c.dept) }}>{c.dept}</td>
+                      <td style={{ padding: "11px 12px", ...getDepartmentTextStyle(c.department) }}>{c.department}</td>
                       <td style={{ padding: "11px 12px" }}>
                         <span style={{
                           ...STATUS_STYLES[c.status],
@@ -217,7 +216,7 @@ export default function Dashboard() {
                           fontSize: "0.78rem", fontWeight: 600
                         }}>{c.status}</span>
                       </td>
-                      <td style={{ padding: "11px 12px", color: "#6b7280" }}>{c.date}</td>
+                      <td style={{ padding: "11px 12px", color: "#6b7280" }}>{c.date_filed}</td>
                     </tr>
                   ))}
                 </tbody>

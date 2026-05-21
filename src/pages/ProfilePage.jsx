@@ -34,11 +34,11 @@ export default function Profile() {
       .then((data) => {
         if (!Array.isArray(data)) return;
         setLogs(data.map((item) => ({
-          date: item.DATE_STR || '-',
-          device: item.DEVICE || '-',
-          location: item.IP_ADDRESS || '-',
-          status: item.STATUS || '-',
-          green: item.STATUS === 'Success',
+          date: item.date_str || '-',
+          device: item.device || '-',
+          location: item.ip_address || '-',
+          status: item.status || '-',
+          green: item.status === 'Success',
         })));
       })
       .catch(() => {});
@@ -235,8 +235,8 @@ export default function Profile() {
             {/* <section className="rounded-[14px] border border-[#e5e7eb] bg-white p-5 shadow-[0_2px_10px_rgba(0,0,0,0.07)]">
               <h3 className="mb-4 mt-0 text-base font-bold text-[#1b3a57]">Security Logs</h3>
               {logs.length === 0 ? (
-                <p className="py-5 text-center text-sm text-[#64748b]">No login history yet.</p> */}
-              {/* ) : (
+                <p className="py-5 text-center text-sm text-[#64748b]">No login history yet.</p>
+              ) : (
                 <div className="overflow-x-auto">
                   <table className="w-full border-collapse text-sm">
                     <thead>

@@ -76,7 +76,7 @@ export default function AdminOfficers() {
             Department
             <select value={form.dept_id} onChange={(e) => setForm({ ...form, dept_id: e.target.value })} style={fieldStyle}>
               <option value="">Select Department</option>
-              {departments.map((d) => <option key={d.DEPT_ID} value={d.DEPT_ID}>{d.DEPT_NAME}</option>)}
+              {departments.map((d) => <option key={d.dept_id} value={d.dept_id}>{d.dept_name}</option>)}
             </select>
           </label>
           <button onClick={save} style={{ background: '#1b3a57', color: 'white', border: 'none', borderRadius: '8px', padding: '11px 18px', fontWeight: 700, cursor: 'pointer' }}>
@@ -95,12 +95,12 @@ export default function AdminOfficers() {
           <thead><tr>{['ID', 'Name', 'Department', 'Action'].map((h) => <th key={h} style={{ textAlign: 'left', padding: '10px 8px', color: '#334155', borderBottom: '1px solid #e2e8f0' }}>{h}</th>)}</tr></thead>
           <tbody>
             {officers.map((o) => (
-              <tr key={o.OFFICER_ID}>
-                <td style={{ padding: '10px 8px', borderBottom: '1px solid #f1f5f9' }}>{o.OFFICER_ID}</td>
-                <td style={{ padding: '10px 8px', borderBottom: '1px solid #f1f5f9' }}>{o.OFFICER_NAME}</td>
-                <td style={{ padding: '10px 8px', borderBottom: '1px solid #f1f5f9', ...getDepartmentTextStyle(o.DEPT_NAME) }}>{o.DEPT_NAME}</td>
+              <tr key={o.officer_id}>
+                <td style={{ padding: '10px 8px', borderBottom: '1px solid #f1f5f9' }}>{o.officer_id}</td>
+                <td style={{ padding: '10px 8px', borderBottom: '1px solid #f1f5f9' }}>{o.officer_name}</td>
+                <td style={{ padding: '10px 8px', borderBottom: '1px solid #f1f5f9', ...getDepartmentTextStyle(o.dept_name) }}>{o.dept_name}</td>
                 <td style={{ padding: '10px 8px', borderBottom: '1px solid #f1f5f9' }}>
-                  <button onClick={() => { setEditId(o.OFFICER_ID); setForm({ officer_name: o.OFFICER_NAME, dept_id: o.DEPT_ID }); }} style={{ background: '#eff6ff', color: '#1d4ed8', border: '1px solid #bfdbfe', borderRadius: '7px', padding: '6px 12px', cursor: 'pointer', fontWeight: 700 }}>Edit</button>
+                  <button onClick={() => { setEditId(o.officer_id); setForm({ officer_name: o.officer_name, dept_id: o.dept_id }); }} style={{ background: '#eff6ff', color: '#1d4ed8', border: '1px solid #bfdbfe', borderRadius: '7px', padding: '6px 12px', cursor: 'pointer', fontWeight: 700 }}>Edit</button>
                 </td>
               </tr>
             ))}
