@@ -1,7 +1,7 @@
 const { createClient } = require('@supabase/supabase-js');
 
 function createAuthMiddleware({ query, syncUserToDB }) {
-  const supabaseUrl = process.env.SUPABASE_URL;
+  const supabaseUrl            = process.env.SUPABASE_URL;
   const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
   const supabase = supabaseUrl && supabaseServiceRoleKey
     ? createClient(supabaseUrl, supabaseServiceRoleKey, {
@@ -17,26 +17,20 @@ function createAuthMiddleware({ query, syncUserToDB }) {
 
   async function verifySupabaseToken(req, res, next) {
     if (!supabase) {
-      return res.status(500).json({
-        error: 'Supabase server environment is not configured.',
-        message: 'Supabase server environment is not configured.',
-      });
+      return res.status(500).json({ message: 'Supabase server environment is not configured.' });
     }
-
     const token = extractToken(req);
-    if (!token) return res.status(401).json({ error: 'No token', message: 'No token provided.' });
+    if (!token) return res.status(401).json({ message: 'No token provided.' });
 
     try {
       const { data, error } = await supabase.auth.getUser(token);
-      if (error || !data?.user) {
-        return res.status(401).json({ error: 'Invalid token', message: 'Invalid token.' });
-      }
-
+      if (error || !data?.user)
+        return res.status(401).json({ message: 'Invalid token.' });
       req.supabaseUser = data.user;
       next();
     } catch (err) {
       console.error('Supabase Auth Error:', err.message);
-      res.status(401).json({ error: 'Invalid token', message: 'Invalid token.' });
+      res.status(401).json({ message: 'Invalid token.' });
     }
   }
 
@@ -48,38 +42,34 @@ function createAuthMiddleware({ query, syncUserToDB }) {
         if (typeof syncUserToDB === 'function') {
           dbUser = await syncUserToDB(req.supabaseUser);
         } else if (query) {
+          // ✅ MySQL syntax — lowercase columns, positional ?
           const result = await query(
-            `SELECT USER_ID, FULL_NAME, EMAIL, ROLE
-             FROM USERS
-             WHERE SUPABASE_UID = :supabase_uid`,
-            { supabase_uid: req.supabaseUser.id }
+            `SELECT user_id, full_name, email, role
+             FROM users
+             WHERE supabase_uid = ?`,
+            [req.supabaseUser.id]
           );
           dbUser = result.rows?.[0] || null;
         }
 
-        if (!dbUser) return res.status(401).json({ error: 'User not found', message: 'Unauthorized.' });
+        if (!dbUser) return res.status(401).json({ message: 'Unauthorized.' });
 
-        req.user = dbUser;
+        req.user    = dbUser;
         req.authUser = {
-          user_id: dbUser.USER_ID,
-          full_name: dbUser.FULL_NAME || '',
-          email: dbUser.EMAIL || '',
-          role: String(dbUser.ROLE || 'citizen').toLowerCase(),
+          user_id:   dbUser.user_id,
+          full_name: dbUser.full_name || '',
+          email:     dbUser.email     || '',
+          role:      String(dbUser.role || 'citizen').toLowerCase(),
         };
         next();
       } catch (err) {
         console.error('Auth Error:', err.message);
-        res.status(500).json({ error: 'Authorization check failed', message: 'Authorization check failed.' });
+        res.status(500).json({ message: 'Authorization check failed.' });
       }
     });
   }
 
-  return {
-    supabase,
-    extractToken,
-    verifySupabaseToken,
-    requireAuth,
-  };
+  return { supabase, extractToken, verifySupabaseToken, requireAuth };
 }
 
 module.exports = { createAuthMiddleware };
