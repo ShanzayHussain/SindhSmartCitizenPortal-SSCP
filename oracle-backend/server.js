@@ -1,11 +1,9 @@
-
 require('dotenv').config();
 const express = require('express');
 const oracledb = require('oracledb');
 const cors     = require('cors');
-const bcrypt   = require('bcryptjs');
 const axios    = require('axios');
-const crypto   = require('crypto');
+const { createClient } = require('@supabase/supabase-js');
 
 const app = express();
 app.use(cors());
@@ -13,8 +11,13 @@ app.use(express.json({ limit: '50mb' }));
 
 oracledb.fetchAsString = [oracledb.CLOB];
 
-const AUTH_SECRET = process.env.AUTH_SECRET || 'smart-citizen-portal-secret';
-const TOKEN_TTL_MS = 1000 * 60 * 60 * 12;
+const supabaseUrl = process.env.SUPABASE_URL;
+const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+const supabase = supabaseUrl && supabaseServiceRoleKey
+  ? createClient(supabaseUrl, supabaseServiceRoleKey, {
+      auth: { persistSession: false, autoRefreshToken: false },
+    })
+  : null;
 
 const db = {
   user:          process.env.DB_USER,
@@ -37,58 +40,180 @@ async function query(sql, binds = {}, opts = {}) {
   }
 }
 
-function signToken(payload) {
-  const data = Buffer.from(JSON.stringify(payload)).toString('base64url');
-  const sig = crypto.createHmac('sha256', AUTH_SECRET).update(data).digest('base64url');
-  return `${data}.${sig}`;
-}
-
-function verifyToken(token) {
-  if (!token || typeof token !== 'string' || !token.includes('.')) return null;
-  const [data, sig] = token.split('.');
-  const expected = crypto.createHmac('sha256', AUTH_SECRET).update(data).digest('base64url');
-  if (sig !== expected) return null;
-  try {
-    const payload = JSON.parse(Buffer.from(data, 'base64url').toString('utf8'));
-    if (!payload?.exp || Date.now() > payload.exp) return null;
-    return payload;
-  } catch {
-    return null;
-  }
-}
-
 function extractToken(req) {
   const hdr = String(req.headers.authorization || '');
   if (hdr.toLowerCase().startsWith('bearer ')) return hdr.slice(7).trim();
   return '';
 }
 
-async function authRequired(req, res, next) {
+async function verifySupabaseToken(req, res, next) {
+  if (!supabase) {
+    return res.status(500).json({ message: 'Supabase server environment is not configured.' });
+  }
+
   const token = extractToken(req);
-  const payload = verifyToken(token);
-  if (!payload?.user_id) return res.status(401).json({ message: 'Unauthorized.' });
+  if (!token) return res.status(401).json({ message: 'No token provided.' });
 
   try {
-    const result = await query(
-      `SELECT USER_ID, FULL_NAME, EMAIL, ROLE
-       FROM USERS
-       WHERE USER_ID = :user_id`,
-      { user_id: Number(payload.user_id) }
-    );
-    if (!result.rows.length) return res.status(401).json({ message: 'Unauthorized.' });
+    const { data, error } = await supabase.auth.getUser(token);
+    if (error || !data?.user) return res.status(401).json({ message: 'Invalid token.' });
 
-    const u = result.rows[0];
-    req.authUser = {
-      user_id: u.USER_ID,
-      full_name: u.FULL_NAME || '',
-      email: u.EMAIL || '',
-      role: String(u.ROLE || 'citizen').toLowerCase(),
-    };
+    req.supabaseUser = data.user;
     next();
   } catch (err) {
-    console.error('Auth Error:', err.message);
-    res.status(500).json({ message: 'Authorization check failed.' });
+    console.error('Supabase Auth Error:', err.message);
+    res.status(401).json({ message: 'Invalid token.' });
   }
+}
+
+async function findUserBySupabaseIdentity(supabaseUser) {
+  const supabaseUid = supabaseUser?.id;
+  const email = String(supabaseUser?.email || '').toLowerCase();
+  if (!supabaseUid || !email) return null;
+
+  const result = await query(
+    `SELECT USER_ID, FULL_NAME, EMAIL, CNIC, PHONE, ADDRESS,
+            ROLE, USER_PROFILEPIC, FATHER_NAME, DISTRICT,
+            TO_CHAR(DOB, 'YYYY-MM-DD') AS DOB, SUPABASE_UID
+     FROM USERS
+     WHERE SUPABASE_UID = :supabase_uid OR LOWER(EMAIL) = :email
+     FETCH FIRST 1 ROWS ONLY`,
+    { supabase_uid: supabaseUid, email }
+  );
+
+  return result.rows?.[0] || null;
+}
+
+async function syncUserToDB(supabaseUser, profile = {}) {
+  const supabaseUid = supabaseUser?.id;
+  const email = String(supabaseUser?.email || profile.Email || '').toLowerCase();
+  if (!supabaseUid || !email) throw new Error('Supabase user is missing id or email.');
+
+  const metadata = supabaseUser.user_metadata || {};
+  const fullName = profile.Full_Name || metadata.full_name || metadata.name || email.split('@')[0];
+  const cnic = profile.CNIC || metadata.cnic || null;
+  const phone = profile.Phone || metadata.phone || null;
+  const address = profile.Address || metadata.address || null;
+
+  let user = await findUserBySupabaseIdentity(supabaseUser);
+
+  if (user) {
+    if (!user.SUPABASE_UID) {
+      await query(
+        `UPDATE USERS
+         SET SUPABASE_UID = :supabase_uid
+         WHERE USER_ID = :user_id`,
+        { supabase_uid: supabaseUid, user_id: user.USER_ID },
+        { autoCommit: true }
+      );
+      user.SUPABASE_UID = supabaseUid;
+    }
+    return user;
+  }
+
+  const result = await query(
+    `INSERT INTO USERS (SUPABASE_UID, FULL_NAME, EMAIL, PASSWORD, CNIC, PHONE, ADDRESS, ROLE)
+     VALUES (:supabase_uid, :full_name, :email, 'supabase-auth', :cnic, :phone, :address, 'citizen')
+     RETURNING USER_ID INTO :id`,
+    {
+      supabase_uid: supabaseUid,
+      full_name: fullName,
+      email,
+      cnic,
+      phone,
+      address,
+      id: { dir: oracledb.BIND_OUT, type: oracledb.NUMBER },
+    },
+    { autoCommit: true }
+  );
+
+  user = await findUserBySupabaseIdentity(supabaseUser);
+  if (!user) throw new Error(`User sync failed for id ${result.outBinds.id?.[0] || 'unknown'}.`);
+  return user;
+}
+
+async function recordLogin(req, userId) {
+  try {
+    const ua  = String(req.headers['user-agent'] || '');
+    const fwd = req.headers['x-forwarded-for'];
+    const ip  = String(typeof fwd === 'string' ? fwd.split(',')[0].trim() : req.socket?.remoteAddress || '');
+
+    const device = /mobile/i.test(ua) ? 'Mobile' : /tablet|ipad/i.test(ua) ? 'Tablet' : 'Desktop';
+
+    const isLocal = ['::1','127.0.0.1'].includes(ip) || ip.startsWith('192.168') || ip.startsWith('10.');
+    let location  = 'Local Device';
+    if (!isLocal) {
+      const geo = await axios.get(`http://ip-api.com/json/${ip}?fields=city,country`, { timeout: 3000 }).catch(() => null);
+      location = geo?.data?.city ? `${geo.data.city}, ${geo.data.country}` : ip || 'Unknown';
+    }
+
+    const conn2 = await oracledb.getConnection(db);
+    await conn2.execute(
+      `INSERT INTO LOGIN_LOGS (USER_ID, DEVICE, IP_ADDRESS, STATUS, LOGIN_AT)
+       VALUES (:uid, :device, :loc, 'Success', SYSTIMESTAMP)`,
+      { uid: userId, device: device.substring(0,100), loc: location.substring(0,50) },
+      { autoCommit: true }
+    );
+    await conn2.close();
+  } catch (logErr) {
+    console.error('Log error:', logErr.message);
+  }
+}
+
+async function buildUserResponse(u, token) {
+  let pic = '';
+  if (u.USER_PROFILEPIC) {
+    pic = typeof u.USER_PROFILEPIC === 'string'
+      ? u.USER_PROFILEPIC
+      : (await u.USER_PROFILEPIC.getData?.() || '');
+  }
+
+  return {
+    token,
+    user_id:     u.USER_ID,
+    full_name:   u.FULL_NAME   || '',
+    email:       u.EMAIL       || '',
+    cnic:        u.CNIC        || '',
+    phone:       u.PHONE       || '',
+    address:     u.ADDRESS     || '',
+    role:        String(u.ROLE || 'citizen').toLowerCase(),
+    profilepic:  pic,
+    father_name: u.FATHER_NAME || '',
+    district:    u.DISTRICT    || '',
+    dob:         u.DOB         || '',
+  };
+}
+
+async function authRequired(req, res, next) {
+  verifySupabaseToken(req, res, async () => {
+    try {
+      const synced = await syncUserToDB(req.supabaseUser);
+      const result = await query(
+        `SELECT USER_ID, FULL_NAME, EMAIL, ROLE
+         FROM USERS
+         WHERE USER_ID = :user_id`,
+        { user_id: synced.USER_ID }
+      );
+      if (!result.rows.length) return res.status(401).json({ message: 'Unauthorized.' });
+
+      const u = result.rows[0];
+      req.authUser = {
+        user_id: u.USER_ID,
+        full_name: u.FULL_NAME || '',
+        email: u.EMAIL || '',
+        role: String(u.ROLE || 'citizen').toLowerCase(),
+      };
+      next();
+    } catch (err) {
+      console.error('Auth Error:', err.message);
+      res.status(500).json({ message: 'Authorization check failed.' });
+    }
+  });
+}
+
+async function loadSyncedUser(req, profile = {}) {
+  if (!req.supabaseUser) throw new Error('Supabase token is required.');
+  return syncUserToDB(req.supabaseUser, profile);
 }
 
 function adminRequired(req, res, next) {
@@ -116,28 +241,22 @@ async function getComplaintOwner(complaintId) {
 }
 
 // ─── REGISTER ────────────────────────────────────────────────────
-app.post('/api/register', async (req, res) => {
-  const { Full_Name, Email, Password, CNIC, Phone, Address } = req.body || {};
+app.post('/api/register', verifySupabaseToken, async (req, res) => {
+  const { Full_Name, Email, CNIC, Phone, Address } = req.body || {};
 
-  if (!Full_Name || !Email || !Password)
-    return res.status(400).json({ message: 'Name, Email and Password required.' });
+  if (!Full_Name || !Email)
+    return res.status(400).json({ message: 'Name and Email required.' });
+
+  if (String(req.supabaseUser.email || '').toLowerCase() !== String(Email || '').toLowerCase()) {
+    return res.status(403).json({ message: 'Supabase email does not match submitted email.' });
+  }
 
   try {
-    const hashed = await bcrypt.hash(Password, 10);
-    const result = await query(
-      `INSERT INTO USERS (FULL_NAME, EMAIL, PASSWORD, CNIC, PHONE, ADDRESS, ROLE)
-       VALUES (:Full_Name, :Email, :hashed, :CNIC, :Phone, :Address, 'citizen')
-       RETURNING USER_ID INTO :id`,
-      {
-        Full_Name, Email, hashed,
-        CNIC:    CNIC    || null,
-        Phone:   Phone   || null,
-        Address: Address || null,
-        id: { dir: oracledb.BIND_OUT, type: oracledb.NUMBER },
-      },
-      { autoCommit: true }
-    );
-    res.status(201).json({ user_id: result.outBinds.id?.[0], message: 'Registered successfully.' });
+    const user = await loadSyncedUser(req, { Full_Name, Email, CNIC, Phone, Address });
+    res.status(201).json({
+      ...(await buildUserResponse(user, extractToken(req))),
+      message: 'Registered successfully.',
+    });
   } catch (err) {
     if (err.errorNum === 1)
       return res.status(409).json({ message: 'Email or CNIC already exists.' });
@@ -148,83 +267,20 @@ app.post('/api/register', async (req, res) => {
 
 // ─── LOGIN ───────────────────────────────────────────────────────
 app.post('/api/login', async (req, res) => {
-  const { Email, Password } = req.body || {};
-  if (!Email || !Password)
-    return res.status(400).json({ message: 'Email and Password required.' });
+  const token = extractToken(req);
+  if (!token) return res.status(401).json({ message: 'No token provided.' });
 
   try {
-    const result = await query(
-      `SELECT USER_ID, FULL_NAME, EMAIL, PASSWORD, CNIC, PHONE, ADDRESS,
-              ROLE, USER_PROFILEPIC, FATHER_NAME, DISTRICT,
-              TO_CHAR(DOB, 'YYYY-MM-DD') AS DOB
-       FROM USERS WHERE EMAIL = :Email`,
-      { Email }
-    );
-
-    if (!result.rows.length)
-      return res.status(401).json({ message: 'Invalid email or password.' });
-
-    const u = result.rows[0];
-    if (!await bcrypt.compare(Password, u.PASSWORD))
-      return res.status(401).json({ message: 'Invalid email or password.' });
-
-    // Save login log
-    try {
-      const ua  = String(req.headers['user-agent'] || '');
-      const fwd = req.headers['x-forwarded-for'];
-      const ip  = String(typeof fwd === 'string' ? fwd.split(',')[0].trim() : req.socket?.remoteAddress || '');
-
-      const device = /mobile/i.test(ua) ? 'Mobile' : /tablet|ipad/i.test(ua) ? 'Tablet' : 'Desktop';
-
-      const isLocal = ['::1','127.0.0.1'].includes(ip) || ip.startsWith('192.168') || ip.startsWith('10.');
-      let location  = 'Local Device';
-      if (!isLocal) {
-        const geo = await axios.get(`http://ip-api.com/json/${ip}?fields=city,country`, { timeout: 3000 }).catch(() => null);
-        location = geo?.data?.city ? `${geo.data.city}, ${geo.data.country}` : ip || 'Unknown';
-      }
-
-      const conn2 = await oracledb.getConnection(db);
-      await conn2.execute(
-        `INSERT INTO LOGIN_LOGS (USER_ID, DEVICE, IP_ADDRESS, STATUS, LOGIN_AT)
-         VALUES (:uid, :device, :loc, 'Success', SYSTIMESTAMP)`,
-        { uid: u.USER_ID, device: device.substring(0,100), loc: location.substring(0,50) },
-        { autoCommit: true }
-      );
-      await conn2.close();
-    } catch (logErr) {
-      console.error('Log error:', logErr.message);
+    if (!supabase) {
+      return res.status(500).json({ message: 'Supabase server environment is not configured.' });
     }
 
-    // CLOB pic → string
-    let pic = '';
-    if (u.USER_PROFILEPIC) {
-      pic = typeof u.USER_PROFILEPIC === 'string'
-        ? u.USER_PROFILEPIC
-        : (await u.USER_PROFILEPIC.getData?.() || '');
-    }
+    const { data, error } = await supabase.auth.getUser(token);
+    if (error || !data?.user) return res.status(401).json({ message: 'Invalid token.' });
 
-    const normalizedRole = String(u.ROLE || 'citizen').toLowerCase();
-    const token = signToken({
-      user_id: u.USER_ID,
-      role: normalizedRole,
-      exp: Date.now() + TOKEN_TTL_MS,
-    });
-
-    res.json({
-      token,
-      user_id:     u.USER_ID,
-      full_name:   u.FULL_NAME   || '',
-      email:       u.EMAIL       || '',
-      cnic:        u.CNIC        || '',
-      phone:       u.PHONE       || '',
-      address:     u.ADDRESS     || '',
-      role:        normalizedRole,
-      profilepic:  pic,
-      father_name: u.FATHER_NAME || '',
-      district:    u.DISTRICT    || '',
-      dob:         u.DOB         || '',
-    });
-
+    const user = await syncUserToDB(data.user);
+    await recordLogin(req, user.USER_ID);
+    res.json(await buildUserResponse(user, token));
   } catch (err) {
     console.error('Login Error:', err.message);
     res.status(500).json({ message: 'Login failed.', details: err.message });
@@ -1056,5 +1112,3 @@ app.put('/api/admin/departments/:id', authRequired, adminRequired, async (req, r
     res.status(500).json({ message: 'Could not update department.', details: err.message });
   }
 });
-
-

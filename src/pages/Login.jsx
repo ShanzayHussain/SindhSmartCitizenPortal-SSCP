@@ -1,10 +1,10 @@
-
 import React, { useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import logo from '../assets/logo.png';
 import Button from '../components/ui/Button';
 import AuthShell from '../components/ui/AuthShell';
 import { FormField, TextInput } from '../components/ui/FormField';
+import { supabase } from '../lib/supabase';
 
 function Login() {
   const [showPassword, setShowPassword] = useState(false);
@@ -33,13 +33,19 @@ function Login() {
 
     setSubmitting(true);
     try {
+      const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
+        email: form.email,
+        password: form.password,
+      });
+
+      if (authError) throw new Error(authError.message);
+
+      const token = authData?.session?.access_token;
+      if (!token) throw new Error('Login succeeded, but no Supabase session was returned.');
+
       const res = await fetch('/api/login', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          Email: form.email,
-          Password: form.password,
-        }),
+        headers: { Authorization: `Bearer ${token}` },
       });
 
       let data = null;
@@ -55,10 +61,8 @@ function Login() {
         throw new Error(`${baseMessage}${details}`);
       }
 
-      // Save auth + user payload
-      if (data?.token) {
-        localStorage.setItem('token', data.token);
-      }
+      // Save Supabase access token + your DB user payload
+      localStorage.setItem('token', data.token || token);
       localStorage.setItem('user', JSON.stringify(data));
 
       setSuccess(`Welcome, ${data.full_name || 'user'}!`);

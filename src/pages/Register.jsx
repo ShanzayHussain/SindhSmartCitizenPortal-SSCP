@@ -3,6 +3,7 @@ import logo from '../assets/logo.png';
 import Button from '../components/ui/Button';
 import AuthShell from '../components/ui/AuthShell';
 import { FormField, TextArea, TextInput } from '../components/ui/FormField';
+import { supabase } from '../lib/supabase';
 
 function Register() {
   const [showPassword, setShowPassword] = useState(false);
@@ -19,18 +20,33 @@ function Register() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [fieldErrors, setFieldErrors] = useState({});
+
+  const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+  const cnicPattern = /^[0-9]{5}-[0-9]{7}-[0-9]{1}$/;
 
   const onChange = (key) => (e) => {
-    setForm((prev) => ({ ...prev, [key]: e.target.value }));
+    const value = e.target.value;
+    setForm((prev) => ({ ...prev, [key]: value }));
+    setFieldErrors((prev) => ({ ...prev, [key]: '' }));
   };
 
   const onSubmit = async (e) => {
     e.preventDefault();
     setError('');
     setSuccess('');
+    setFieldErrors({});
 
     if (!form.fullName || !form.email || !form.cnic || !form.password) {
       setError('Please fill all required fields.');
+      return;
+    }
+    if (!emailPattern.test(form.email.trim())) {
+      setFieldErrors({ email: 'Please use a valid email address.' });
+      return;
+    }
+    if (!cnicPattern.test(form.cnic.trim())) {
+      setFieldErrors({ cnic: 'Use correct format: 12345-1234567-1.' });
       return;
     }
     if (form.password !== form.confirmPassword) {
@@ -40,18 +56,48 @@ function Register() {
 
     setSubmitting(true);
     try {
+      const { data: authData, error: authError } = await supabase.auth.signUp({
+        email: form.email,
+        password: form.password,
+        options: {
+          data: {
+            full_name: form.fullName,
+            cnic: form.cnic,
+            phone: form.phone,
+            address: form.address,
+          },
+        },
+      });
+
+      if (authError) throw new Error(authError.message);
+
+      const token = authData?.session?.access_token;
+      if (!token) {
+        setSuccess('Verification email sent. Please verify your email, then login.');
+        setForm({
+          fullName: '',
+          email: '',
+          cnic: '',
+          phone: '',
+          address: '',
+          password: '',
+          confirmPassword: '',
+        });
+        return;
+      }
+
       const res = await fetch('/api/register', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
         body: JSON.stringify({
           Full_Name: form.fullName,
           Email: form.email,
-          Password: form.password,
           CNIC: form.cnic,
           Phone: form.phone,
           Address: form.address,
-          Role: 'User',
-          User_ProfilePic: null,
         }),
       });
 
@@ -68,6 +114,10 @@ function Register() {
       }
 
       setSuccess('Account created successfully.');
+      if (data?.token) {
+        localStorage.setItem('token', data.token);
+        localStorage.setItem('user', JSON.stringify(data));
+      }
       setForm({
         fullName: '',
         email: '',
@@ -78,7 +128,12 @@ function Register() {
         confirmPassword: '',
       });
     } catch (err) {
-      setError(err.message);
+      const message = err.message || 'Registration failed.';
+      if (message.toLowerCase().includes('invalid email')) {
+        setFieldErrors({ email: 'Please use a valid email address.' });
+      } else {
+        setError(message);
+      }
     } finally {
       setSubmitting(false);
     }
@@ -92,6 +147,7 @@ function Register() {
         </FormField>
         <FormField label="Email Address" htmlFor="email">
           <TextInput id="email" type="email" placeholder="e.g. janedoe@gmail.com" value={form.email} onChange={onChange('email')} />
+          {fieldErrors.email ? <p className="mt-1 text-xs font-semibold text-red-600">{fieldErrors.email}</p> : null}
         </FormField>
         <FormField label="CNIC Number" htmlFor="cnic">
           <TextInput
@@ -103,6 +159,7 @@ function Register() {
             value={form.cnic}
             onChange={onChange('cnic')}
           />
+          {fieldErrors.cnic ? <p className="mt-1 text-xs font-semibold text-red-600">{fieldErrors.cnic}</p> : null}
         </FormField>
         <FormField label="Phone Number" htmlFor="phone">
           <TextInput id="phone" type="text" placeholder="+92" value={form.phone} onChange={onChange('phone')} />

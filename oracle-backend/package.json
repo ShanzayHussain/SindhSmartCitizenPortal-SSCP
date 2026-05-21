@@ -11,11 +11,13 @@
   "license": "ISC",
   "type": "commonjs",
   "dependencies": {
+    "@supabase/supabase-js": "^2.106.1",
     "axios": "^1.15.2",
     "bcryptjs": "^2.4.3",
     "cors": "^2.8.6",
     "dotenv": "^17.3.1",
     "express": "^5.2.1",
-    "oracledb": "^6.10.0"
+    "oracledb": "^6.10.0",
+    "resend": "^6.12.3"
   }
 }
