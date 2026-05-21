@@ -414,12 +414,12 @@ app.get('/api/dashboard/:user_id', authRequired, async (req, res) => {
         resolved:   Number(s.resolved_complaints    || 0),
       },
       recentComplaints: (recentResult.rows || []).map(r => ({
-        id:     r.complaint_id,
-        title:  r.title      || '',
-        dept:   r.department || '',
-        status: r.status     || 'Pending',
-        date:   r.date_filed || '',
-      })),
+  complaint_id: r.complaint_id,
+  title:        r.title       || '',
+  department:   r.department  || '',
+  status:       r.status      || 'Pending',
+  date_filed:   r.date_filed  || '',
+})),
     });
   } catch (err) {
     console.error('Dashboard Error:', err.message);
