@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import AdminLayout from './AdminLayout';
+import { apiFetch } from '../../lib/api';
 
 const STATUSES = ['Pending', 'In Progress', 'Resolved', 'Closed'];
 
