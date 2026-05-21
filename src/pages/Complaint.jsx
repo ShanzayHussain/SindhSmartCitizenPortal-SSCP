@@ -5,7 +5,7 @@ import { SelectInput, TextArea, TextInput } from '../components/ui/FormField';
 import DashboardLayout from './DashboardLayout';
 import { apiFetch } from '../lib/api';
 
-const API = 'http://localhost:5000/api';
+const API = import.meta.env.VITE_API_URL || '/api';
 
 const statusClassMap = {
   Pending:       'bg-amber-400',

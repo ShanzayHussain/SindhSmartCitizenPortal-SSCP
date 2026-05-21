@@ -4,7 +4,7 @@ import { Building2, Droplets, Flame, Zap } from 'lucide-react';
 import DashboardLayout from './DashboardLayout';
 import { apiFetch } from '../lib/api';
 
-const API = 'http://localhost:5000/api';
+const API = import.meta.env.VITE_API_URL || '/api';
 
 function getDepartmentMeta(name = '') {
   const normalized = name.toLowerCase().replace(/[\s-]/g, '');
