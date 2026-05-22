@@ -2,7 +2,6 @@
 
 Sindh Smart Citizen Portal is a full-stack complaint management system for citizens and administrators of Sindh. Citizens can register, log in, file complaints against utility departments (KE, SSGC, Water Board), track progress, and manage their profile. Administrators can review complaints, assign officers, update statuses, manage departments, and monitor activity.
 
-> 🎓 Built as a **DBMS Course Project** by a team of 3.
 
 ## 🌐 Live Demo
 https://sindh-smart-citizen-portal-sscp.vercel.app/
