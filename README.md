@@ -1,19 +1,25 @@
 # Sindh Smart Citizen Portal
 
-Sindh Smart Citizen Portal is a complaint management system for citizens and administrators. Citizens can register, log in, file complaints, track progress, and manage their profile. Administrators can review complaints, update statuses, manage departments, and manage officers.
+Sindh Smart Citizen Portal is a full-stack complaint management system for citizens and administrators of Sindh. Citizens can register, log in, file complaints against utility departments (KE, SSGC, Water Board), track progress, and manage their profile. Administrators can review complaints, assign officers, update statuses, manage departments, and monitor activity.
+
+> 🎓 Built as a **DBMS Course Project** by a team of 3.
+
+## 🌐 Live Demo
+https://sindh-smart-citizen-portal-sscp.vercel.app/
 
 ## Features
 
 ### Citizen Portal
-- User registration and login
-- Citizen dashboard with complaint stats
-- Complaint submission and tracking
+- User registration and login via Supabase Auth
+- Citizen dashboard with complaint stats and chart
+- Complaint submission with document upload
 - Department-wise complaint view
 - Profile management and login activity
 
 ### Admin Panel
 - Admin login and protected routes
-- Complaint monitoring and status management
+- Complaint monitoring, filtering, and status management
+- Officer assignment per complaint
 - Department management
 - Officer management
 - Dashboard overview of complaint counts
@@ -29,16 +35,26 @@ Sindh Smart Citizen Portal is a complaint management system for citizens and adm
 ### Backend
 - Node.js
 - Express
-- Oracle Database
-- `oracledb`
+- MySQL (hosted on Railway)
+- `mysql2`
+
+### Auth & Cloud
+- Supabase Auth (JWT-based authentication)
+- Railway (MySQL cloud database)
+- Vercel (frontend + backend deployment)
 
 ## Project Structure
 
 ```text
 .
-├── src/                 # React frontend
-├── oracle-backend/      # Express + Oracle backend
-├── images/              # App screenshots used in this README
+├── src/                   # React frontend
+├── oracle-backend/        # Express + MySQL backend
+│   ├── server.js          # Main Express server
+│   ├── middleware/
+│   │   └── auth.js        # Supabase auth middleware
+│   └── .env               # Backend environment variables
+├── images/                # App screenshots
+├── vercel.json            # Vercel deployment config
 └── README.md
 ```
 
@@ -46,17 +62,15 @@ Sindh Smart Citizen Portal is a complaint management system for citizens and adm
 
 ### Prerequisites
 - Node.js and npm
-- Oracle Database / Oracle XE
-- Oracle schema access
+- MySQL database (local or Railway)
+- Supabase project
 
 ### 1. Install frontend dependencies
-
 ```bash
 npm install
 ```
 
 ### 2. Install backend dependencies
-
 ```bash
 cd oracle-backend
 npm install
@@ -65,145 +79,111 @@ npm install
 ### 3. Configure environment variables
 
 Create `oracle-backend/.env`:
-
 ```env
-DB_USER=system
-DB_PASSWORD=1234
-DB_CONNECT=localhost:1521/xepdb1
-AUTH_SECRET=smart-citizen-portal-secret
+DATABASE_URL=mysql://root:password@host:port/railway
+SUPABASE_URL=https://xxxx.supabase.co
+SUPABASE_SERVICE_ROLE_KEY=eyJ...
 PORT=5000
 ```
 
-### 4. Initialize the Oracle schema
-
-Run the SQL file:
-
-```bash
-docker exec -i <container_id> sqlplus system/1234@localhost:1521/XE < oracle-backend/schema.sql
+Create `.env` in root (frontend):
+```env
+VITE_SUPABASE_URL=https://xxxx.supabase.co
+VITE_SUPABASE_ANON_KEY=eyJ...
+VITE_API_URL=/api
 ```
 
-Or run `oracle-backend/schema.sql` directly in SQL*Plus if Oracle is installed locally.
+### 4. Initialize the MySQL schema
+
+Run the SQL schema on your Railway MySQL database (via Railway Database tab or MySQL Workbench):
+```sql
+-- Create tables: users, login_logs, departments, officers, complaints, complaint_documents
+-- See schema.sql for full script
+```
 
 ### 5. Start the backend
-
 ```bash
 cd oracle-backend
 node server.js
 ```
 
 ### 6. Start the frontend
-
 ```bash
 npm run dev
 ```
 
 Frontend runs at:
-
-```text
 http://localhost:5173
-```
 
 Backend API runs at:
-
-```text
 http://localhost:5000
-```
 
-## Admin Credentials
+## Deployment
 
-```text
-Email: superadmin@example.com
-Password: test1234
-```
+This project is deployed on **Vercel** with the following setup:
+- Frontend (React/Vite) served as static build
+- Backend (Express) served as Vercel serverless function
+- Database hosted on **Railway MySQL**
+- Auth handled by **Supabase**
+
+Environment variables are configured in Vercel project settings.
 
 ## Key Routes
 
 ### Public / Citizen
-- `/`
-- `/register`
-- `/login?role=citizen`
-- `/dashboard`
-- `/complaint`
-- `/profile`
-- `/departments`
+- `/` — Landing page
+- `/register` — Citizen registration
+- `/login?role=citizen` — Citizen login
+- `/dashboard` — Citizen dashboard
+- `/complaint` — Submit and track complaints
+- `/profile` — Profile management
+- `/departments` — Department overview
 
 ### Admin
-- `/login?role=admin`
-- `/admin/dashboard`
-- `/admin/complaints`
-- `/admin/officers`
-- `/admin/departments`
+- `/login?role=admin` — Admin login
+- `/admin/dashboard` — Admin dashboard
+- `/admin/complaints` — Complaint management
+- `/admin/officers` — Officer management
+- `/admin/departments` — Department management
 
 ## Screenshots
 
 ### Landing Page
+<img width="1835" height="836" alt="image" src="https://github.com/user-attachments/assets/2f2fc593-96ad-46b8-aa9c-287eede63ae8" />
 
-Shows the public homepage with separate citizen and admin login options.
-
-![Landing Page](images/s11.png)
-
-### Citizen Registration
-
-Shows the citizen account creation form.
-
-![Citizen Registration](images/Screenshot_2026-05-02_15-17-06.png)
+### Citizen Login
+<img width="982" height="729" alt="image" src="https://github.com/user-attachments/assets/51b356be-1083-47bd-b3eb-60a688649655" />
 
 ### Admin Login
-
-Shows the admin login screen with role-specific access messaging.
-
-![Admin Login](images/Screenshot_2026-05-02_15-18-23.png)
+<img width="983" height="719" alt="image" src="https://github.com/user-attachments/assets/16669608-bf84-4426-9e80-193b510cde0e" />
 
 ### Citizen Dashboard
-
-Shows complaint stats, quick actions, recent complaints, and announcements.
-
-![Citizen Dashboard](images/s4.png)
+<img width="1903" height="813" alt="image" src="https://github.com/user-attachments/assets/c7577d6e-7214-43ae-bdc9-60659167b609" />
 
 ### Complaint Management
-
-Shows complaint submission and complaint history for citizens.
-
-![Complaint Management](images/s5.png)
+<img width="1905" height="785" alt="image" src="https://github.com/user-attachments/assets/677bf01c-77fe-4a5e-a441-354fd741d7f7" />
 
 ### Citizen Profile
-
-Shows profile details, complaint stats, and login activity.
-
-![Citizen Profile](cprofile.png)
+<img width="1912" height="732" alt="image" src="https://github.com/user-attachments/assets/db99227b-8490-46b2-8698-9644cae7379f" />
 
 ### Departments Page
-
-Shows the departments available for complaint routing.
-
-![Departments Page](images/s7.png)
+<img width="1904" height="542" alt="image" src="https://github.com/user-attachments/assets/8dca0ede-f7cd-47bf-b267-2c0f5b093ae4" />
 
 ### Admin Dashboard
-
-Shows total complaints, status cards, and recent complaint records.
-
-![Admin Dashboard](images/Screenshot_2026-05-02_15-12-13.png)
+<img width="1912" height="646" alt="image" src="https://github.com/user-attachments/assets/903cb6a8-dcd2-49e7-a0ba-4fcbcb08c47a" />
 
 ### Admin Complaints Panel
-
-Shows complaint filtering and complaint detail management for administrators.
-
-![Admin Complaints Panel](images/Screenshot_2026-05-02_15-12-29.png)
+<img width="1880" height="809" alt="image" src="https://github.com/user-attachments/assets/35b86887-10c5-409a-ab22-5f4614db7cc9" />
 
 ### Admin Officers Panel
-
-Shows officer creation and officer listing by department.
-
-![Admin Officers Panel](images/Screenshot_2026-05-02_15-12-55.png)
+<img width="1897" height="648" alt="image" src="https://github.com/user-attachments/assets/2776ede1-a4a3-478f-83d7-4264b2fca586" />
 
 ### Admin Departments Panel
+<img width="1904" height="579" alt="image" src="https://github.com/user-attachments/assets/e9cc5946-fb66-4889-bc00-2579879b76d6" />
 
-Shows department creation and department management.
-
-![Admin Departments Panel](images/Screenshot_2026-05-02_15-13-18.png)
 
 ## Notes
-
-- The frontend proxies `/api` requests to `http://localhost:5000`.
-- The backend uses Oracle for persistent storage.
-- `oracle-backend/.env` is intentionally ignored by Git.
+- Frontend proxies `/api` requests to the Express backend via Vercel routing
+- `oracle-backend/.env` is intentionally ignored by Git
+- Supabase handles all authentication — no passwords stored in MySQL
+- MySQL stores all app data linked via `supabase_uid`
